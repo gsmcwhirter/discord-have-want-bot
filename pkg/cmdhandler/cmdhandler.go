@@ -10,37 +10,48 @@ import (
 // ErrMissingHandler TODOC
 var ErrMissingHandler = errors.New("missing handler for command")
 
-// LineHandler TODOC
-type LineHandler interface {
-	HandleLine(line []rune) (string, error)
-}
-
-type lineHandlerFunc struct {
-	handler func(line []rune) (string, error)
-}
-
-// NewLineHandler TODOC
-func NewLineHandler(f func([]rune) (string, error)) LineHandler {
-	return lineHandlerFunc{handler: f}
-}
-
-func (lh lineHandlerFunc) HandleLine(line []rune) (string, error) {
-	return lh.handler(line)
-}
-
 // CommandHandler TODOC
 type CommandHandler struct {
-	Parser   parser.Parser
+	parser   parser.Parser
 	commands map[string]LineHandler
+	helpCmd  []rune
 }
 
 // NewCommandHandler TODOC
 func NewCommandHandler(parser parser.Parser) CommandHandler {
 	ch := CommandHandler{
-		Parser:   parser,
 		commands: map[string]LineHandler{},
 	}
+	ch.SetParser(parser)
+
+	ch.SetHandler("help", NewLineHandler(ch.showHelp))
 	return ch
+}
+
+// Parser returns the parser for the command handler
+func (ch *CommandHandler) Parser() parser.Parser {
+	return ch.parser
+}
+
+// SetParser sets the parser for the command handler
+func (ch *CommandHandler) SetParser(p parser.Parser) {
+	ch.parser = p
+	ch.calculateHelpCmd()
+}
+
+func (ch *CommandHandler) calculateHelpCmd() {
+	ch.helpCmd = append([]rune{ch.Parser().LeadChar()}, []rune("help")...)
+}
+
+func (ch *CommandHandler) showHelp(user string, line []rune) (string, error) {
+	leadChar := string(ch.Parser().LeadChar())
+	helpStr := "Available Commands:\n"
+	for cmd := range ch.commands {
+		if cmd != "" {
+			helpStr += fmt.Sprintf("  %s%s\n", leadChar, cmd)
+		}
+	}
+	return helpStr, nil
 }
 
 // SetHandler TODOC
@@ -49,11 +60,18 @@ func (ch *CommandHandler) SetHandler(cmd string, handler LineHandler) {
 }
 
 // HandleLine TODOC
-func (ch CommandHandler) HandleLine(line []rune) (string, error) {
-	cmd, rest, err := ch.Parser.ParseCommand(line)
+func (ch CommandHandler) HandleLine(user string, line []rune) (string, error) {
+	cmd, rest, err := ch.Parser().ParseCommand(line)
+
+	if cmd == "" && err == parser.ErrUnknownCommand {
+		cmd, rest, err = ch.Parser().ParseCommand(ch.helpCmd)
+	}
+
 	if err == parser.ErrUnknownCommand {
 		return fmt.Sprintf("Unknown command '%s'", cmd), nil
-	} else if err != nil {
+	}
+
+	if err != nil {
 		return "", err
 	}
 
@@ -62,5 +80,5 @@ func (ch CommandHandler) HandleLine(line []rune) (string, error) {
 		return "", ErrMissingHandler
 	}
 
-	return subHandler.HandleLine(rest)
+	return subHandler.HandleLine(user, rest)
 }

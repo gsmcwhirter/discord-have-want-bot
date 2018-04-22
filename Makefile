@@ -2,6 +2,7 @@ BUILD_DATE := `date -u +%Y%m%d`
 VERSION ?= $(shell git describe --tags --always --dirty 2>/dev/null || echo v0.0.1)
 GIT_SHA := $(shell git rev-parse HEAD)
 APP_NAME := discordbot
+REPL_NAME := botrepl
 PROJECT := github.com/gsmcwhirter/eso-discord
 
 # can specify V=1 on the line with `make` to get verbose output
@@ -24,13 +25,15 @@ all: deps debug  ## Download dependencies and do a debug build
 
 build-debug: version proto
 	$Q go build -v -ldflags "-X main.AppName=$(APP_NAME) -X main.BuildVersion=$(VERSION) -X main.BuildSHA=$(GIT_SHA) -X main.BuildDate=$(BUILD_DATE)" -o bin/$(APP_NAME) -race $(PROJECT)/cmd/$(APP_NAME)
+	$Q go build -v -ldflags "-X main.AppName=$(REPL_NAME) -X main.BuildVersion=$(VERSION) -X main.BuildSHA=$(GIT_SHA) -X main.BuildDate=$(BUILD_DATE)" -o bin/$(REPL_NAME) -race $(PROJECT)/cmd/$(REPL_NAME)
 
 build-release: version proto
 	$Q go build -v -ldflags "-s -w -X main.AppName=$(APP_NAME) -X main.BuildVersion=$(VERSION) -X main.BuildSHA=$(GIT_SHA) -X main.BuildDate=$(BUILD_DATE)" -o bin/$(APP_NAME) $(PROJECT)/cmd/$(APP_NAME)
+	$Q go build -v -ldflags "-s -w -X main.AppName=$(REPL_NAME) -X main.BuildVersion=$(VERSION) -X main.BuildSHA=$(GIT_SHA) -X main.BuildDate=$(BUILD_DATE)" -o bin/$(REPL_NAME) $(PROJECT)/cmd/$(REPL_NAME)
 
-proto: pkg/storage/storage.go  ## Compile the protobuf files
+proto: pkg/storage/storage.pb.go  ## Compile the protobuf files
 
-pkg/storage/storage.go: pkg/storage/storage.proto
+pkg/storage/storage.pb.go: pkg/storage/storage.proto
 	protoc --go_out=pkg/storage --proto_path=pkg/storage pkg/storage/storage.proto
 
 build-release-bundles: build-release
@@ -40,32 +43,28 @@ build-release-bundles: build-release
 clean:  ## Remove compiled artifacts
 	$Q rm bin/*
 
-debug: fmt vet build-debug  ## Debug build: create a dev build (enable race detection, don't strip symbols)
+debug: vet build-debug  ## Debug build: create a dev build (enable race detection, don't strip symbols)
 
-release: fmt vet test build-release-bundles  ## Release build: create a release build (disable race detection, strip symbols)
+release: vet test build-release-bundles  ## Release build: create a release build (disable race detection, strip symbols)
 
 deps:  ## Download dependencies
 	$Q # for development and linting
 	$Q go get golang.org/x/tools/cmd/godoc
 	$Q go get golang.org/x/tools/cmd/goimports
 	$Q go get -u github.com/alecthomas/gometalinter
-	# $Q gometalinter --install
-	$Q go get -u github.com/coreos/bbolt/..
+	$Q # $Q gometalinter --install
+	$Q go get -u github.com/pkg/errors
+	$Q go get -u github.com/coreos/bbolt/...
 	$Q go get -u github.com/golang/protobuf/protoc-gen-go
 	$Q go get -u github.com/gorilla/websocket
-
-fmt:
-	$Q for src in $(shell goimports -l .); \
-		do \
-			goimports -w $$src; \
-		done
+	$Q go get -u github.com/tj/kingpin
+	$Q go get -u github.com/steven-ferrer/gonsole
 
 test:  ## Run the tests
 	$Q go test -cover ./pkg/...
 
 version:  ## Print the version string and git sha that would be recorded if a release was built now
-	$Q echo $(VERSION)
-	$Q echo $(GIT_SHA)
+	$Q echo $(VERSION) $(GIT_SHA)
 
 vet:  ## Run the linter
 	$Q gometalinter -e S1008 $(GOPATH)/src/$(PROJECT)/cmd/...
