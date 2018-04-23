@@ -2,7 +2,10 @@ package storage
 
 import "errors"
 
+// ErrSkillNotExist TODOC
 var ErrSkillNotExist = errors.New("skill does not exist")
+
+// ErrItemNotExist TODOC
 var ErrItemNotExist = errors.New("item does not exist")
 
 type boltCharacter struct {

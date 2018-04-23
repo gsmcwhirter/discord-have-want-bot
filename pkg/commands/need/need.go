@@ -9,6 +9,7 @@ import (
 	cmderrors "github.com/gsmcwhirter/eso-discord/pkg/commands/errors"
 	"github.com/gsmcwhirter/eso-discord/pkg/parser"
 	"github.com/gsmcwhirter/eso-discord/pkg/storage"
+	"github.com/gsmcwhirter/eso-discord/pkg/util"
 	errorsx "github.com/pkg/errors"
 )
 
@@ -97,7 +98,7 @@ func (c needCommands) points(user string, args []rune) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	defer t.Rollback()
+	defer util.CheckDefer(t.Rollback)
 
 	bUser, err := t.GetUser(user)
 	if err != nil {
@@ -145,7 +146,7 @@ func (c needCommands) item(user string, args []rune) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	defer t.Rollback()
+	defer util.CheckDefer(t.Rollback)
 
 	bUser, err := t.GetUser(user)
 	if err != nil {

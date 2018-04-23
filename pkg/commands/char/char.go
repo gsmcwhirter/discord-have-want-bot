@@ -10,6 +10,7 @@ import (
 	cmderrors "github.com/gsmcwhirter/eso-discord/pkg/commands/errors"
 	"github.com/gsmcwhirter/eso-discord/pkg/parser"
 	"github.com/gsmcwhirter/eso-discord/pkg/storage"
+	"github.com/gsmcwhirter/eso-discord/pkg/util"
 )
 
 func skillsDescription(char storage.Character, indent string) string {
@@ -45,7 +46,7 @@ func (c charCommands) show(user string, args []rune) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	defer t.Rollback()
+	defer util.CheckDefer(t.Rollback)
 
 	bUser, err := t.AddUser(user) // add or get empty (don't save)
 	if err != nil {
@@ -76,7 +77,7 @@ func (c charCommands) items(user string, args []rune) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	defer t.Rollback()
+	defer util.CheckDefer(t.Rollback)
 
 	bUser, err := t.AddUser(user) // add or get empty (don't save)
 	if err != nil {
@@ -113,7 +114,7 @@ func (c charCommands) points(user string, args []rune) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	defer t.Rollback()
+	defer util.CheckDefer(t.Rollback)
 
 	bUser, err := t.AddUser(user) // add or get empty (don't save)
 	if err != nil {
@@ -154,7 +155,7 @@ func (c charCommands) create(user string, args []rune) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	defer t.Rollback()
+	defer util.CheckDefer(t.Rollback)
 
 	bUser, err := t.GetUser(user)
 	if err != nil {
@@ -198,7 +199,7 @@ func (c charCommands) delete(user string, args []rune) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	defer t.Rollback()
+	defer util.CheckDefer(t.Rollback)
 
 	bUser, err := t.GetUser(user)
 	if err != nil {
@@ -232,7 +233,7 @@ func (c charCommands) blank(user string, args []rune) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	defer t.Rollback()
+	defer util.CheckDefer(t.Rollback)
 
 	bUser, err := t.AddUser(user) // add or get empty (don't save)
 	if err != nil {

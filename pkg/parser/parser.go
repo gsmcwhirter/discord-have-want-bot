@@ -41,8 +41,7 @@ func NewParser(opts Options) Parser {
 
 // KnownCommand TODOC
 func (p parser) KnownCommand(cmd string) bool {
-	known, _ := p.knownCommands[cmd]
-	return known
+	return p.knownCommands[cmd]
 }
 
 // LeadChar returns the character that identifies commands
@@ -74,7 +73,7 @@ func (p parser) ParseCommand(line []rune) (cmd string, rest []rune, err error) {
 			cmd = string(line[1:i])
 			rest = line[i:]
 
-			if known, _ := p.knownCommands[cmd]; known {
+			if known := p.knownCommands[cmd]; known {
 				return
 			}
 		}
@@ -82,7 +81,7 @@ func (p parser) ParseCommand(line []rune) (cmd string, rest []rune, err error) {
 
 	cmd = string(line[1:])
 	rest = line[0:0]
-	if known, _ := p.knownCommands[cmd]; !known {
+	if known := p.knownCommands[cmd]; !known {
 		err = ErrUnknownCommand
 	}
 	return
@@ -101,6 +100,7 @@ var digits = map[rune]bool{
 	'9': true,
 }
 
+// MaybeCount TODOC
 func MaybeCount(line []rune) (l []rune, c []rune) {
 	l = line
 

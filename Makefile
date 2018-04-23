@@ -23,11 +23,11 @@ Q = $(if $(filter 1,$V),,@)
 
 all: deps debug  ## Download dependencies and do a debug build
 
-build-debug: version proto
+build-debug: version proto easyjson
 	$Q go build -v -ldflags "-X main.AppName=$(APP_NAME) -X main.BuildVersion=$(VERSION) -X main.BuildSHA=$(GIT_SHA) -X main.BuildDate=$(BUILD_DATE)" -o bin/$(APP_NAME) -race $(PROJECT)/cmd/$(APP_NAME)
 	$Q go build -v -ldflags "-X main.AppName=$(REPL_NAME) -X main.BuildVersion=$(VERSION) -X main.BuildSHA=$(GIT_SHA) -X main.BuildDate=$(BUILD_DATE)" -o bin/$(REPL_NAME) -race $(PROJECT)/cmd/$(REPL_NAME)
 
-build-release: version proto
+build-release: version proto easyjson
 	$Q go build -v -ldflags "-s -w -X main.AppName=$(APP_NAME) -X main.BuildVersion=$(VERSION) -X main.BuildSHA=$(GIT_SHA) -X main.BuildDate=$(BUILD_DATE)" -o bin/$(APP_NAME) $(PROJECT)/cmd/$(APP_NAME)
 	$Q go build -v -ldflags "-s -w -X main.AppName=$(REPL_NAME) -X main.BuildVersion=$(VERSION) -X main.BuildSHA=$(GIT_SHA) -X main.BuildDate=$(BUILD_DATE)" -o bin/$(REPL_NAME) $(PROJECT)/cmd/$(REPL_NAME)
 
@@ -35,6 +35,11 @@ proto: pkg/storage/storage.pb.go  ## Compile the protobuf files
 
 pkg/storage/storage.pb.go: pkg/storage/storage.proto
 	protoc --go_out=pkg/storage --proto_path=pkg/storage pkg/storage/storage.proto
+
+easyjson: pkg/discordapi/jsonapi/discord_formats_easyjson.go
+
+pkg/discordapi/discord_formats_easyjson.go: pkg/discordapi/jsonapi/discord_formats.go
+	$Q easyjson -all -snake_case $(GOPATH)/src/$(PROJECT)/pkg/discordapi/jsonapi/discord_formats.go
 
 build-release-bundles: build-release
 	$Q gzip -k -f bin/$(APP_NAME)
@@ -59,6 +64,8 @@ deps:  ## Download dependencies
 	$Q go get -u github.com/gorilla/websocket
 	$Q go get -u github.com/tj/kingpin
 	$Q go get -u github.com/steven-ferrer/gonsole
+	$Q go get -u golang.org/x/oauth2
+	$Q go get -u github.com/mailru/easyjson/...
 
 test:  ## Run the tests
 	$Q go test -cover ./pkg/...
@@ -67,8 +74,8 @@ version:  ## Print the version string and git sha that would be recorded if a re
 	$Q echo $(VERSION) $(GIT_SHA)
 
 vet:  ## Run the linter
-	$Q gometalinter -e S1008 $(GOPATH)/src/$(PROJECT)/cmd/...
-	$Q gometalinter -e S1008 $(GOPATH)/src/$(PROJECT)/pkg/...
+	$Q gometalinter -e S1008 -s jsonapi $(GOPATH)/src/$(PROJECT)/cmd/...
+	$Q gometalinter -e S1008 -s jsonapi $(GOPATH)/src/$(PROJECT)/pkg/...
 
 help:  ## Show the help message
 	@awk 'BEGIN {FS = ":.*?## "} /^[a-zA-Z_-]+:.*?## / {printf "\033[36m%-30s\033[0m %s\n", $$1, $$2}' ./Makefile

@@ -7,6 +7,7 @@ import (
 	errorsx "github.com/pkg/errors"
 )
 
+// ErrUserNotExist TODOC
 var ErrUserNotExist = errors.New("user does not exist")
 
 type boltUserAPI struct {

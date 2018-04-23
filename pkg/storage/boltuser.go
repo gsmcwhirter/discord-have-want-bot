@@ -6,6 +6,7 @@ import (
 	"github.com/golang/protobuf/proto"
 )
 
+// ErrCharacterNotExist TODOC
 var ErrCharacterNotExist = errors.New("character does not exist")
 
 type boltUser struct {

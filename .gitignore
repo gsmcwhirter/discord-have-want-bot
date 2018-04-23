@@ -15,4 +15,5 @@
 
 *.code-workspace
 *.pb.go
+*_easyjson.go
 *.db
