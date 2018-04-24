@@ -19,7 +19,6 @@ func NewDiscordMessageHandler() wsclient.MessageHandler {
 func (c discordMessageHandler) FormatHeartbeat(lastSeq *int) wsclient.WSMessage {
 	p := etfapi.Payload{
 		OpCode: 1,
-		Data:   []byte{},
 	}
 	fmt.Println(p)
 	return wsclient.WSMessage{}
