@@ -38,7 +38,7 @@ pkg/storage/storage.pb.go: pkg/storage/storage.proto
 
 easyjson: pkg/discordapi/jsonapi/discord_formats_easyjson.go
 
-pkg/discordapi/discord_formats_easyjson.go: pkg/discordapi/jsonapi/discord_formats.go
+pkg/discordapi/jsonapi/discord_formats_easyjson.go: pkg/discordapi/jsonapi/discord_formats.go
 	$Q easyjson -all -snake_case $(GOPATH)/src/$(PROJECT)/pkg/discordapi/jsonapi/discord_formats.go
 
 build-release-bundles: build-release
@@ -66,6 +66,8 @@ deps:  ## Download dependencies
 	$Q go get -u github.com/steven-ferrer/gonsole
 	$Q go get -u golang.org/x/oauth2
 	$Q go get -u github.com/mailru/easyjson/...
+	$Q go get -u github.com/go-kit/kit/...
+	$Q go get -u github.com/rs/xid
 
 test:  ## Run the tests
 	$Q go test -cover ./pkg/...

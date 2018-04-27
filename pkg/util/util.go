@@ -1,9 +1,12 @@
 package util
 
 import (
+	"context"
 	"fmt"
 	"io"
 	"os"
+
+	"github.com/rs/xid"
 )
 
 // ReadBody TODOC
@@ -48,4 +51,22 @@ func CheckDefer(fs ...func() error) {
 			fmt.Fprintf(os.Stderr, "Error in defer: %s\n", err) // nolint: errcheck,gas
 		}
 	}
+}
+
+// ContextKey TODOC
+type ContextKey string
+
+// NewRequestContext TODOC
+func NewRequestContext() context.Context {
+	return NewRequestContextFrom(context.Background())
+}
+
+// NewRequestContextFrom TODOC
+func NewRequestContextFrom(ctx context.Context) context.Context {
+	return context.WithValue(ctx, ContextKey("request_id"), GenerateRequestID())
+}
+
+// GenerateRequestID TODOC
+func GenerateRequestID() string {
+	return xid.New().String()
 }

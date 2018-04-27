@@ -3,13 +3,11 @@ package main
 import (
 	"fmt"
 	"os"
-	"time"
 
-	bolt "github.com/coreos/bbolt"
 	"github.com/gsmcwhirter/eso-discord/pkg/commands"
 	"github.com/gsmcwhirter/eso-discord/pkg/discordapi"
 	"github.com/gsmcwhirter/eso-discord/pkg/options"
-	"github.com/gsmcwhirter/eso-discord/pkg/storage"
+	"github.com/pelletier/go-toml"
 )
 
 // build time variables
@@ -21,6 +19,15 @@ var (
 	BuildSHA     string
 )
 
+type config struct {
+	DiscordAPI   string `toml:"discord_api"`
+	ClientID     string `toml:"client_id"`
+	ClientSecret string `toml:"client_secret"`
+	ClientToken  string `toml:"client_token"`
+	Database     string `toml:"database"`
+	NumWorkers   int    `toml:"num_workers"`
+}
+
 func main() {
 	code, err := run()
 	if err != nil {
@@ -30,40 +37,75 @@ func main() {
 	os.Exit(code)
 }
 
-func run() (int, error) {
+func setup() (conf config, err error) {
 	helpStr := ""
 	cli := options.OptionParser(AppName, AppAuthor, BuildVersion, BuildSHA, BuildDate, helpStr)
-	cid := cli.Flag("client-id", "The discord bot client id").Default("437746796207538176").String()
-	cs := cli.Flag("client-secret", "The discord bot client secret").Required().String()
-	tok := cli.Flag("client-token", "The discord bot client token").Required().String()
-	dbFile := cli.Flag("db", "The bolt database file").Short('d').Required().String()
-	numWorkers := cli.Flag("num-workers", "The number of worker goroutines to run").Short('n').Default("10").Int()
+	cfile := cli.Flag("config", "The config file to use").Default("./config.toml").String()
+	cid := cli.Flag("client-id", "The discord bot client id").String()
+	cs := cli.Flag("client-secret", "The discord bot client secret").String()
+	tok := cli.Flag("client-token", "The discord bot client token").String()
+	dbFile := cli.Flag("database", "The bolt database file").String()
+	numWorkers := cli.Flag("num-workers", "The number of worker goroutines to run").Int()
 
-	_, err := cli.Parse(os.Args[1:])
+	_, err = cli.Parse(os.Args[1:])
+	if err != nil {
+		return
+	}
+
+	tomlConf, err := toml.LoadFile(*cfile)
+	if err != nil {
+		fmt.Printf("Could not load config file %s: %s\n", *cfile, err)
+	}
+
+	err = tomlConf.Unmarshal(&conf)
+	if err != nil {
+		fmt.Printf("Could not load config gile settings: %s\n", err)
+	}
+
+	if cid != nil && *cid != "" {
+		conf.ClientID = *cid
+	}
+
+	if cs != nil && *cs != "" {
+		conf.ClientSecret = *cs
+	}
+
+	if tok != nil && *tok != "" {
+		conf.ClientToken = *tok
+	}
+
+	if dbFile != nil && *dbFile != "" {
+		conf.Database = *dbFile
+	}
+
+	if numWorkers != nil && *numWorkers > 0 {
+		conf.NumWorkers = *numWorkers
+	}
+
+	return
+}
+
+func run() (int, error) {
+	config, err := setup()
 	if err != nil {
 		return -1, err
 	}
 
-	db, err := bolt.Open(*dbFile, 0660, &bolt.Options{Timeout: 1 * time.Second})
+	deps, err := createDependencies(config)
 	if err != nil {
 		return -1, err
 	}
-	defer db.Close() // nolint: errcheck
+	defer deps.Close()
 
-	userAPI, err := storage.NewBoltUserAPI(db)
-	if err != nil {
-		return -1, err
-	}
-
-	_ = commands.CommandHandler(userAPI, fmt.Sprintf("%s (%s) (%s)", BuildVersion, BuildSHA, BuildDate))
+	_ = commands.CommandHandler(deps, fmt.Sprintf("%s (%s) (%s)", BuildVersion, BuildSHA, BuildDate))
 	botConfig := discordapi.BotConfig{
-		ClientID:     *cid,
-		ClientSecret: *cs,
-		BotToken:     *tok,
-		APIURL:       "https://discordapp.com/api",
-		NumWorkers:   *numWorkers,
+		ClientID:     config.ClientID,
+		ClientSecret: config.ClientSecret,
+		BotToken:     config.ClientToken,
+		APIURL:       config.DiscordAPI,
+		NumWorkers:   config.NumWorkers,
 	}
-	bot := discordapi.NewDiscordBot(botConfig)
+	bot := discordapi.NewDiscordBot(deps, botConfig)
 	err = bot.AuthenticateAndConnect()
 	if err != nil {
 		return -1, err

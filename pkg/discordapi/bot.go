@@ -1,14 +1,28 @@
 package discordapi
 
 import (
+	"context"
 	"fmt"
 	"net/http"
 	"net/url"
+	"time"
+
+	"github.com/go-kit/kit/log/level"
+
+	"github.com/go-kit/kit/log"
 
 	"github.com/gsmcwhirter/eso-discord/pkg/discordapi/jsonapi"
+	"github.com/gsmcwhirter/eso-discord/pkg/httpclient"
+	"github.com/gsmcwhirter/eso-discord/pkg/logging"
 	"github.com/gsmcwhirter/eso-discord/pkg/util"
 	"github.com/gsmcwhirter/eso-discord/pkg/wsclient"
 )
+
+type dependencies interface {
+	Logger() log.Logger
+	HTTPClient() httpclient.HTTPClient
+	WSClient() wsclient.WSClient
+}
 
 // DiscordBot TODOC
 type DiscordBot interface {
@@ -23,91 +37,57 @@ type BotConfig struct {
 	ClientSecret string
 	BotToken     string
 	APIURL       string
-	// AuthURL      string
-	// TokenURL     string
-	// RedirectURL  string
-	// GatewayHost string
-	// GatewayPort string
-	NumWorkers int
+	NumWorkers   int
+}
+
+type hbReconfig struct {
+	ctx      context.Context
+	interval int
 }
 
 type discordBot struct {
-	config     BotConfig
-	httpClient *http.Client
-	wsClient   wsclient.WSClient
+	config        BotConfig
+	discordClient discordMessageHandler
+	deps          dependencies
+	httpHeaders   http.Header
+
+	heartbeat    *time.Ticker
+	heartbeats   chan hbReconfig
+	lastSequence *int
 }
 
 // NewDiscordBot TODOC
-func NewDiscordBot(conf BotConfig) DiscordBot {
-	return &discordBot{
-		config:     conf,
-		httpClient: &http.Client{},
+func NewDiscordBot(deps dependencies, conf BotConfig) DiscordBot {
+	d := discordBot{
+		config:      conf,
+		deps:        deps,
+		httpHeaders: http.Header{},
 	}
-}
 
-func (d *discordBot) HTTPGet(url string) (*http.Response, error) {
-	req, err := http.NewRequest("GET", url, nil)
-	if err != nil {
-		return nil, err
-	}
-	req.Header.Add("Authorization", fmt.Sprintf("Bot %s", d.config.BotToken))
-	return d.httpClient.Do(req)
+	d.httpHeaders.Add("Authorization", fmt.Sprintf("Bot %s", d.config.BotToken))
+
+	return &d
 }
 
 func (d *discordBot) AuthenticateAndConnect() error {
-	// ctx := context.Background()
-	// conf := &oauth2.Config{
-	// 	ClientID:     d.config.ClientID,
-	// 	ClientSecret: d.config.ClientSecret,
-	// 	Scopes:       []string{"bot"},
-	// 	Endpoint: oauth2.Endpoint{
-	// 		AuthURL:  d.config.AuthURL,
-	// 		TokenURL: d.config.TokenURL,
-	// 	},
-	// 	RedirectURL: d.config.RedirectURL,
-	// }
+	ctx := util.NewRequestContext()
+	logger := logging.WithContext(ctx, d.deps.Logger())
 
-	// client := &http.Client{}
-	// authUrl := conf.AuthCodeURL("state", oauth2.AccessTypeOffline)
-	// resp, err := client.Get(authUrl)
-	// if err != nil {
-	// 	return errors.Wrap(err, "could not authenticate")
-	// }
-
-	// if resp.StatusCode != 301 && resp.StatusCode != 302 {
-	// 	return fmt.Errorf("unexpected status code %d", resp.StatusCode)
-	// }
-
-	// loc := resp.Header.Get("Location")
-	// redirectUrl, err := url.Parse(loc)
-	// if err != nil {
-	// 	return errors.Wrap(err, "could not parse oauth2 redirect url")
-	// }
-
-	// code := redirectUrl.Query().Get("code")
-	// if code == "" {
-	// 	return errors.New("could not find code in redirect url")
-	// }
-
-	// token, err := conf.Exchange(ctx, code)
-	// if err != nil {
-	// 	return errors.Wrap(err, "could not get a valid token")
-	// }
-
-	// d.token = token
-
-	resp, err := d.HTTPGet(fmt.Sprintf("%s/gateway/bot", d.config.APIURL))
+	resp, err := d.deps.HTTPClient().Get(ctx, fmt.Sprintf("%s/gateway/bot", d.config.APIURL), &d.httpHeaders)
 	if err != nil {
 		return err
 	}
 	defer util.CheckDefer(resp.Body.Close)
 
-	fmt.Printf("%+v\n", resp)
-
 	bodySize, body, err := util.ReadBody(resp.Body, 200)
 	if err != nil {
 		return err
 	}
+
+	level.Debug(logger).Log(
+		"response_body", body,
+		"response_bytes", bodySize,
+	)
 
 	respData := jsonapi.GatewayResponse{}
 	err = respData.UnmarshalJSON(body[:bodySize])
@@ -115,9 +95,12 @@ func (d *discordBot) AuthenticateAndConnect() error {
 		return err
 	}
 
-	fmt.Printf("gateway %+v\n", respData)
+	level.Debug(logger).Log(
+		"gateway_url", respData.URL,
+		"gateway_shards", respData.Shards,
+	)
 
-	discordClient := NewDiscordMessageHandler()
+	d.discordClient = newDiscordMessageHandler()
 
 	connectURL, err := url.Parse(respData.URL)
 	if err != nil {
@@ -128,13 +111,15 @@ func (d *discordBot) AuthenticateAndConnect() error {
 	q.Add("encoding", "etf")
 	connectURL.RawQuery = q.Encode()
 
-	fmt.Printf("Connecting to %s\n", connectURL.String())
+	level.Info(logger).Log(
+		"message", "connecting to gateway",
+		"gateway_url", connectURL.String(),
+	)
 
-	wsClient := wsclient.NewWSClient(connectURL.String())
-	wsClient.SetHandler(discordClient)
-	d.wsClient = wsClient
+	d.deps.WSClient().SetGateway(connectURL.String())
+	d.deps.WSClient().SetHandler(d.discordClient)
 
-	err = d.wsClient.Connect(d.config.BotToken)
+	err = d.deps.WSClient().Connect(d.config.BotToken)
 	if err != nil {
 		return err
 	}
@@ -150,10 +135,43 @@ func (d *discordBot) AuthenticateAndConnect() error {
 }
 
 func (d *discordBot) Disconnect() error {
-	d.wsClient.Close()
+	d.deps.WSClient().Close()
 	return nil
 }
 
 func (d *discordBot) Run() {
-	d.wsClient.HandleRequests(d.config.NumWorkers)
+	done := make(chan struct{})
+	defer close(done)
+
+	go d.heartbeatHandler(done)
+	d.deps.WSClient().HandleRequests(d.config.NumWorkers)
+
+}
+
+func (d *discordBot) heartbeatHandler(done chan struct{}) {
+	for {
+		if d.heartbeat == nil {
+			time.Sleep(200 * time.Millisecond)
+			continue
+		}
+
+		select {
+		case <-done:
+			return
+		case req := <-d.heartbeats:
+			if req.interval > 0 {
+				d.heartbeat.Stop()
+				d.heartbeat = time.NewTicker(time.Duration(req.interval) * time.Millisecond)
+			} else {
+				ctx := req.ctx
+				if ctx == nil {
+					ctx = util.NewRequestContext()
+				}
+				d.deps.WSClient().SendMessage(d.discordClient.FormatHeartbeat(ctx, d.lastSequence))
+			}
+		case <-d.heartbeat.C:
+			ctx := util.NewRequestContext()
+			d.deps.WSClient().SendMessage(d.discordClient.FormatHeartbeat(ctx, d.lastSequence))
+		}
+	}
 }

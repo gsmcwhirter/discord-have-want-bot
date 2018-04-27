@@ -17,3 +17,5 @@
 *.pb.go
 *_easyjson.go
 *.db
+
+config.toml

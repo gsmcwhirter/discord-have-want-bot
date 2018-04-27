@@ -13,6 +13,10 @@ import (
 	"github.com/gsmcwhirter/eso-discord/pkg/util"
 )
 
+type dependencies interface {
+	UserAPI() storage.UserAPI
+}
+
 func skillsDescription(char storage.Character, indent string) string {
 	skills := char.GetNeededSkills()
 	skillStrings := make([]string, len(skills))
@@ -32,7 +36,7 @@ func itemsDescription(char storage.Character, indent string) string {
 }
 
 type charCommands struct {
-	userAPI storage.UserAPI
+	deps dependencies
 }
 
 func (c charCommands) show(user string, args []rune) (string, error) {
@@ -42,7 +46,7 @@ func (c charCommands) show(user string, args []rune) (string, error) {
 		return "", cmderrors.ErrCharacterNameRequired
 	}
 
-	t, err := c.userAPI.NewTransaction(false)
+	t, err := c.deps.UserAPI().NewTransaction(false)
 	if err != nil {
 		return "", err
 	}
@@ -73,7 +77,7 @@ func (c charCommands) show(user string, args []rune) (string, error) {
 func (c charCommands) items(user string, args []rune) (string, error) {
 	charName := strings.TrimSpace(string(args))
 
-	t, err := c.userAPI.NewTransaction(false)
+	t, err := c.deps.UserAPI().NewTransaction(false)
 	if err != nil {
 		return "", err
 	}
@@ -110,7 +114,7 @@ func (c charCommands) items(user string, args []rune) (string, error) {
 func (c charCommands) points(user string, args []rune) (string, error) {
 	charName := strings.TrimSpace(string(args))
 
-	t, err := c.userAPI.NewTransaction(false)
+	t, err := c.deps.UserAPI().NewTransaction(false)
 	if err != nil {
 		return "", err
 	}
@@ -151,7 +155,7 @@ func (c charCommands) create(user string, args []rune) (string, error) {
 		return "", cmderrors.ErrCharacterNameRequired
 	}
 
-	t, err := c.userAPI.NewTransaction(true)
+	t, err := c.deps.UserAPI().NewTransaction(true)
 	if err != nil {
 		return "", err
 	}
@@ -195,7 +199,7 @@ func (c charCommands) delete(user string, args []rune) (string, error) {
 		return "", cmderrors.ErrCharacterNameRequired
 	}
 
-	t, err := c.userAPI.NewTransaction(true)
+	t, err := c.deps.UserAPI().NewTransaction(true)
 	if err != nil {
 		return "", err
 	}
@@ -229,7 +233,7 @@ func (c charCommands) delete(user string, args []rune) (string, error) {
 }
 
 func (c charCommands) blank(user string, args []rune) (string, error) {
-	t, err := c.userAPI.NewTransaction(false)
+	t, err := c.deps.UserAPI().NewTransaction(false)
 	if err != nil {
 		return "", err
 	}
@@ -249,7 +253,7 @@ func (c charCommands) blank(user string, args []rune) (string, error) {
 }
 
 // CommandHandler TODOC
-func CommandHandler(userAPI storage.UserAPI) cmdhandler.CommandHandler {
+func CommandHandler(deps dependencies) cmdhandler.CommandHandler {
 	p := parser.NewParser(parser.Options{
 		CmdIndicator: ' ',
 		KnownCommands: []string{
@@ -263,7 +267,7 @@ func CommandHandler(userAPI storage.UserAPI) cmdhandler.CommandHandler {
 		},
 	})
 	cc := charCommands{
-		userAPI: userAPI,
+		deps: deps,
 	}
 	ch := cmdhandler.NewCommandHandler(p)
 	ch.SetHandler("", cmdhandler.NewLineHandler(cc.blank))

@@ -58,7 +58,11 @@ func (b boltUserAPITx) Commit() error {
 }
 
 func (b boltUserAPITx) Rollback() error {
-	return b.tx.Rollback()
+	err := b.tx.Rollback()
+	if err != nil && err != bolt.ErrTxClosed {
+		return err
+	}
+	return nil
 }
 
 func (b boltUserAPITx) AddUser(name string) (User, error) {

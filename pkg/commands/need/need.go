@@ -13,6 +13,10 @@ import (
 	errorsx "github.com/pkg/errors"
 )
 
+type dependencies interface {
+	UserAPI() storage.UserAPI
+}
+
 type charItemHandler struct {
 	user     storage.User
 	charName string
@@ -90,11 +94,11 @@ func (h charPointsHandler) HandleLine(user string, args []rune) (string, error) 
 }
 
 type needCommands struct {
-	userAPI storage.UserAPI
+	deps dependencies
 }
 
 func (c needCommands) points(user string, args []rune) (string, error) {
-	t, err := c.userAPI.NewTransaction(true)
+	t, err := c.deps.UserAPI().NewTransaction(true)
 	if err != nil {
 		return "", err
 	}
@@ -142,7 +146,7 @@ func (c needCommands) points(user string, args []rune) (string, error) {
 }
 
 func (c needCommands) item(user string, args []rune) (string, error) {
-	t, err := c.userAPI.NewTransaction(true)
+	t, err := c.deps.UserAPI().NewTransaction(true)
 	if err != nil {
 		return "", err
 	}
@@ -190,7 +194,7 @@ func (c needCommands) item(user string, args []rune) (string, error) {
 }
 
 // CommandHandler TODOC
-func CommandHandler(userAPI storage.UserAPI) cmdhandler.CommandHandler {
+func CommandHandler(deps dependencies) cmdhandler.CommandHandler {
 	p := parser.NewParser(parser.Options{
 		CmdIndicator: ' ',
 		KnownCommands: []string{
@@ -200,7 +204,7 @@ func CommandHandler(userAPI storage.UserAPI) cmdhandler.CommandHandler {
 		},
 	})
 	nc := needCommands{
-		userAPI: userAPI,
+		deps: deps,
 	}
 	ch := cmdhandler.NewCommandHandler(p)
 	ch.SetHandler("pts", cmdhandler.NewLineHandler(nc.points))
