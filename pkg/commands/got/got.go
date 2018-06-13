@@ -5,12 +5,13 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/pkg/errors"
+
 	"github.com/gsmcwhirter/eso-discord/pkg/cmdhandler"
 	cmderrors "github.com/gsmcwhirter/eso-discord/pkg/commands/errors"
 	"github.com/gsmcwhirter/eso-discord/pkg/parser"
 	"github.com/gsmcwhirter/eso-discord/pkg/storage"
 	"github.com/gsmcwhirter/eso-discord/pkg/util"
-	errorsx "github.com/pkg/errors"
 )
 
 type dependencies interface {
@@ -38,7 +39,7 @@ func (h charItemHandler) HandleLine(user string, args []rune) (string, error) {
 
 	ct, err := strconv.Atoi(ctStr)
 	if err != nil {
-		return "", errorsx.Wrap(err, "could not interpret count to adjust item needs")
+		return "", errors.Wrap(err, "could not interpret count to adjust item needs")
 	}
 
 	if ct < 0 {
@@ -47,7 +48,7 @@ func (h charItemHandler) HandleLine(user string, args []rune) (string, error) {
 
 	char, err := h.user.GetCharacter(h.charName)
 	if err != nil {
-		return "", errorsx.Wrap(err, "could not find character to adjust item needs")
+		return "", errors.Wrap(err, "could not find character to adjust item needs")
 	}
 
 	char.DecrNeededItem(itemName, uint64(ct))
@@ -76,7 +77,7 @@ func (h charPointsHandler) HandleLine(user string, args []rune) (string, error) 
 
 	ct, err := strconv.Atoi(ctStr)
 	if err != nil {
-		return "", errorsx.Wrap(err, "could not interpret count to adjust skill needs")
+		return "", errors.Wrap(err, "could not interpret count to adjust skill needs")
 	}
 
 	if ct < 0 {
@@ -85,7 +86,7 @@ func (h charPointsHandler) HandleLine(user string, args []rune) (string, error) 
 
 	char, err := h.user.GetCharacter(h.charName)
 	if err != nil {
-		return "", errorsx.Wrap(err, "could not find character to adjust skill needs")
+		return "", errors.Wrap(err, "could not find character to adjust skill needs")
 	}
 
 	char.DecrNeededSkill(skillName, uint64(ct))
@@ -108,7 +109,7 @@ func (c gotCommands) points(user string, args []rune) (string, error) {
 	if err != nil {
 		bUser, err = t.AddUser(user)
 		if err != nil {
-			return "", errorsx.Wrap(err, "could not create user")
+			return "", errors.Wrap(err, "could not create user")
 		}
 	}
 
@@ -134,12 +135,12 @@ func (c gotCommands) points(user string, args []rune) (string, error) {
 
 	err = t.SaveUser(bUser)
 	if err != nil {
-		return "", errorsx.Wrap(err, "could not save points gotten")
+		return "", errors.Wrap(err, "could not save points gotten")
 	}
 
 	err = t.Commit()
 	if err != nil {
-		return "", errorsx.Wrap(err, "could not save points gotten")
+		return "", errors.Wrap(err, "could not save points gotten")
 	}
 
 	return retStr, nil
@@ -156,7 +157,7 @@ func (c gotCommands) item(user string, args []rune) (string, error) {
 	if err != nil {
 		bUser, err = t.AddUser(user)
 		if err != nil {
-			return "", errorsx.Wrap(err, "could not create user")
+			return "", errors.Wrap(err, "could not create user")
 		}
 	}
 
@@ -182,12 +183,12 @@ func (c gotCommands) item(user string, args []rune) (string, error) {
 
 	err = t.SaveUser(bUser)
 	if err != nil {
-		return "", errorsx.Wrap(err, "could not save item gotten")
+		return "", errors.Wrap(err, "could not save item gotten")
 	}
 
 	err = t.Commit()
 	if err != nil {
-		return "", errorsx.Wrap(err, "could not save item gotten")
+		return "", errors.Wrap(err, "could not save item gotten")
 	}
 
 	return retStr, nil

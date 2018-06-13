@@ -4,7 +4,6 @@ import (
 	bolt "github.com/coreos/bbolt"
 	"github.com/golang/protobuf/proto"
 	"github.com/pkg/errors"
-	errorsx "github.com/pkg/errors"
 )
 
 // ErrUserNotExist TODOC
@@ -99,7 +98,7 @@ func (b boltUserAPITx) GetUser(name string) (User, error) {
 	protoUser := ProtoUser{}
 	err := proto.Unmarshal(val, &protoUser)
 	if err != nil {
-		return nil, errorsx.Wrap(err, "user record is corrupt")
+		return nil, errors.Wrap(err, "user record is corrupt")
 	}
 
 	return &boltUser{&protoUser}, nil

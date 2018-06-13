@@ -100,7 +100,7 @@ func (d *discordBot) AuthenticateAndConnect() error {
 		"gateway_shards", respData.Shards,
 	)
 
-	d.discordClient = newDiscordMessageHandler()
+	d.discordClient = newDiscordMessageHandler(d.deps)
 
 	connectURL, err := url.Parse(respData.URL)
 	if err != nil {

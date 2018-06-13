@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"strings"
 
-	errorsx "github.com/pkg/errors"
+	"github.com/pkg/errors"
 
 	"github.com/gsmcwhirter/eso-discord/pkg/cmdhandler"
 	cmderrors "github.com/gsmcwhirter/eso-discord/pkg/commands/errors"
@@ -54,7 +54,7 @@ func (c charCommands) show(user string, args []rune) (string, error) {
 
 	bUser, err := t.AddUser(user) // add or get empty (don't save)
 	if err != nil {
-		return "", errorsx.Wrap(err, "unable to find user")
+		return "", errors.Wrap(err, "unable to find user")
 	}
 
 	char, err := bUser.GetCharacter(charName)
@@ -85,7 +85,7 @@ func (c charCommands) items(user string, args []rune) (string, error) {
 
 	bUser, err := t.AddUser(user) // add or get empty (don't save)
 	if err != nil {
-		return "", errorsx.Wrap(err, "unable to find user")
+		return "", errors.Wrap(err, "unable to find user")
 	}
 
 	if charName != "" {
@@ -122,7 +122,7 @@ func (c charCommands) points(user string, args []rune) (string, error) {
 
 	bUser, err := t.AddUser(user) // add or get empty (don't save)
 	if err != nil {
-		return "", errorsx.Wrap(err, "unable to find user")
+		return "", errors.Wrap(err, "unable to find user")
 	}
 
 	if charName != "" {
@@ -165,14 +165,14 @@ func (c charCommands) create(user string, args []rune) (string, error) {
 	if err != nil {
 		bUser, err = t.AddUser(user)
 		if err != nil {
-			return "", errorsx.Wrap(err, "could not create character")
+			return "", errors.Wrap(err, "could not create character")
 		}
 	}
 
 	_, err = bUser.GetCharacter(charName)
 	if err != storage.ErrCharacterNotExist {
 		if err != nil {
-			return "", errorsx.Wrap(err, "could not verify character does not exist")
+			return "", errors.Wrap(err, "could not verify character does not exist")
 		}
 
 		return "", cmderrors.ErrCharacterExists
@@ -181,12 +181,12 @@ func (c charCommands) create(user string, args []rune) (string, error) {
 	_ = bUser.AddCharacter(charName)
 	err = t.SaveUser(bUser)
 	if err != nil {
-		return "", errorsx.Wrap(err, "could not save new character")
+		return "", errors.Wrap(err, "could not save new character")
 	}
 
 	err = t.Commit()
 	if err != nil {
-		return "", errorsx.Wrap(err, "could not save new character")
+		return "", errors.Wrap(err, "could not save new character")
 	}
 
 	return "character created", nil
@@ -209,24 +209,24 @@ func (c charCommands) delete(user string, args []rune) (string, error) {
 	if err != nil {
 		bUser, err = t.AddUser(user)
 		if err != nil {
-			return "", errorsx.Wrap(err, "could not create character")
+			return "", errors.Wrap(err, "could not create character")
 		}
 	}
 
 	_, err = bUser.GetCharacter(charName)
 	if err != nil {
-		return "", errorsx.Wrap(err, "could not find character")
+		return "", errors.Wrap(err, "could not find character")
 	}
 
 	bUser.DeleteCharacter(charName)
 	err = t.SaveUser(bUser)
 	if err != nil {
-		return "", errorsx.Wrap(err, "could not delete character")
+		return "", errors.Wrap(err, "could not delete character")
 	}
 
 	err = t.Commit()
 	if err != nil {
-		return "", errorsx.Wrap(err, "could not delete character")
+		return "", errors.Wrap(err, "could not delete character")
 	}
 
 	return "character deleted", nil
@@ -241,7 +241,7 @@ func (c charCommands) blank(user string, args []rune) (string, error) {
 
 	bUser, err := t.AddUser(user) // add or get empty (don't save)
 	if err != nil {
-		return "", errorsx.Wrap(err, "unable to find user")
+		return "", errors.Wrap(err, "unable to find user")
 	}
 
 	chars := bUser.GetCharacters()

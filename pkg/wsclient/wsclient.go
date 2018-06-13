@@ -16,11 +16,6 @@ import (
 	"github.com/gsmcwhirter/eso-discord/pkg/util"
 )
 
-// MessageHandler TODOC
-type MessageHandler interface {
-	HandleRequest(req WSMessage) WSMessage
-}
-
 // WSMessage TODOC
 type WSMessage struct {
 	Ctx             context.Context
@@ -194,11 +189,12 @@ func (c wsClient) readMessages(done chan struct{}, interrupt chan os.Signal) {
 
 			msgType, msg, err := c.conn.ReadMessage()
 			if err != nil {
-				c.deps.Logger().Log(
+				level.Error(logger).Log(
 					"message", "read error",
 					"error", err,
 				)
-				break
+				done <- struct{}{}
+				return
 			}
 
 			ctx := util.NewRequestContext()
@@ -292,7 +288,7 @@ func (c wsClient) requestHandler() {
 			level.Debug(logging.WithContext(req.Ctx, logger)).Log(
 				"message", "requestHandler passing message to the registered handler",
 			)
-			c.responses <- c.handler.HandleRequest(req)
+			c.handler.HandleRequest(req, c.responses)
 		}
 	}
 }
