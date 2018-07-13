@@ -63,14 +63,14 @@ func (c httpClient) Get(ctx context.Context, url string, headers *http.Header) (
 		addHeaders(&req.Header, *headers)
 	}
 
-	level.Debug(logger).Log(
+	_ = level.Debug(logger).Log(
 		"message", "http get start",
 		"url", url,
 		"headers",
 	)
 	start := time.Now()
 	resp, err := c.client.Do(req)
-	level.Debug(logger).Log(
+	_ = level.Debug(logger).Log(
 		"message", "http get complete",
 		"duration_ns", time.Since(start).Nanoseconds(),
 		"status_code", resp.StatusCode,
@@ -92,7 +92,7 @@ func (c httpClient) Post(ctx context.Context, url string, headers *http.Header, 
 		return nil, err
 	}
 
-	level.Debug(logger).Log(
+	_ = level.Debug(logger).Log(
 		"message", "http post start",
 		"url", url,
 	)
@@ -100,7 +100,7 @@ func (c httpClient) Post(ctx context.Context, url string, headers *http.Header, 
 	start := time.Now()
 	resp, err := c.client.Do(req)
 
-	level.Debug(logger).Log(
+	_ = level.Debug(logger).Log(
 		"message", "http post complete",
 		"duration_ns", time.Since(start).Nanoseconds(),
 		"status_code", resp.StatusCode,

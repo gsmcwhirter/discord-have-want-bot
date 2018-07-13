@@ -37,7 +37,7 @@ func main() {
 	os.Exit(code)
 }
 
-func setup() (conf config, err error) {
+func setup() (conf config, err error) { //nolint: gocyclo
 	helpStr := ""
 	cli := options.OptionParser(AppName, AppAuthor, BuildVersion, BuildSHA, BuildDate, helpStr)
 	cfile := cli.Flag("config", "The config file to use").Default("./config.toml").String()

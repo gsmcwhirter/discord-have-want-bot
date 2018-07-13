@@ -3,11 +3,18 @@ package etfapi
 import (
 	"bytes"
 	"fmt"
+	"io"
 
 	"github.com/pkg/errors"
 
 	"github.com/gsmcwhirter/eso-discord/pkg/discordapi/constants"
 )
+
+// ErrNotImplemented TODOC
+var ErrNotImplemented = errors.New("not yet implemented")
+
+// ErrBadTarget TODOC
+var ErrBadTarget = errors.New("bad element unmarshal target")
 
 // ErrBadPayload TODOC
 var ErrBadPayload = errors.New("bad payload format")
@@ -66,6 +73,97 @@ func NewElement(code ETFCode, val interface{}) (*Element, error) {
 	}
 
 	return e, ErrBadElementData
+}
+
+// WriteTo TODOC
+func (e *Element) WriteTo(b io.Writer) (int64, error) {
+	var tmp interface{}
+	if e.Val != nil {
+		tmp = e.Val
+	} else if e.Vals != nil {
+		tmp = e.Vals
+	} else {
+		tmp = nil
+	}
+
+	data, err := marshalInterface(e.Code, tmp)
+	if err != nil {
+		return 0, errors.Wrap(err, "couldn't marshal element")
+	}
+
+	n, err := b.Write(data)
+	return int64(n), err
+}
+
+// Unmarshal TODOC
+func (e *Element) Unmarshal(target interface{}) error {
+	var err error
+	switch e.Code {
+	case Atom:
+		v, ok := target.(*string)
+		if !ok {
+			return errors.Wrap(ErrBadTarget, "needed *string")
+		}
+
+		*v = string(e.Val)
+
+		return nil
+
+	case Binary:
+		v, ok := target.([]byte)
+		if !ok {
+			return errors.Wrap(ErrBadTarget, "needed []byte")
+		}
+
+		if len(v) < len(e.Val) {
+			return errors.Wrap(ErrBadTarget, "target buffer too small")
+		}
+
+		copy(v, e.Val)
+
+		return nil
+	case Int32:
+		v, ok := target.(*int)
+		if !ok {
+			return errors.Wrap(ErrBadTarget, "needed *int")
+		}
+
+		*v, err = Int32SliceToInt(e.Val)
+
+		return errors.Wrap(err, "could not unmarshal int32")
+	case Int8:
+		v, ok := target.(*int)
+		if !ok {
+			return errors.Wrap(ErrBadTarget, "needed *int")
+		}
+
+		*v, err = Int8SliceToInt(e.Val)
+
+		return errors.Wrap(err, "could not unmarshal int8")
+	case Map:
+		v, ok := target.(map[string]Element)
+		if !ok {
+			return errors.Wrap(ErrBadTarget, "needed map[string]Element")
+		}
+
+		if len(e.Vals)%2 != 0 {
+			return ErrBadParity
+		}
+
+		for i := 0; i < len(e.Vals); i += 2 {
+			if e.Vals[i].Code != Atom {
+				return ErrBadFieldType
+			}
+
+			v[string(e.Vals[i].Val)] = e.Vals[i+1]
+		}
+
+		return nil
+	case List:
+		return ErrNotImplemented
+	default:
+		return ErrBadElementData
+	}
 }
 
 // Payload TODOC
@@ -180,7 +278,7 @@ func writeAtom(b *bytes.Buffer, val []byte) error {
 	return nil
 }
 
-func writeLength32(b *bytes.Buffer, n int) error {
+func writeLength32(b io.Writer, n int) error {
 	size, err := IntToInt32Slice(n)
 	if err != nil {
 		return errors.Wrap(err, "could not marshal length")
@@ -188,25 +286,6 @@ func writeLength32(b *bytes.Buffer, n int) error {
 
 	_, err = b.Write(size)
 	return errors.Wrap(err, "could not write length")
-}
-
-func writeElement(b *bytes.Buffer, e Element) error {
-	var tmp interface{}
-	if e.Val != nil {
-		tmp = e.Val
-	} else if e.Vals != nil {
-		tmp = e.Vals
-	} else {
-		tmp = nil
-	}
-
-	data, err := marshalInterface(e.Code, tmp)
-	if err != nil {
-		return errors.Wrap(err, "couldn't marshal map value")
-	}
-
-	b.Write(data)
-	return nil
 }
 
 func marshalInterface(code ETFCode, val interface{}) ([]byte, error) {
@@ -242,7 +321,7 @@ func marshalInterface(code ETFCode, val interface{}) ([]byte, error) {
 				return nil, errors.Wrap(err, "couldn't marshal map key")
 			}
 
-			err = writeElement(&b, v[i+1])
+			_, err = v[i+1].WriteTo(&b)
 			if err != nil {
 				return nil, errors.Wrap(err, "couldn't marshal map value")
 			}
@@ -259,7 +338,7 @@ func marshalInterface(code ETFCode, val interface{}) ([]byte, error) {
 		}
 
 		for _, e := range v {
-			err = writeElement(&b, e)
+			_, err = e.WriteTo(&b)
 			if err != nil {
 				return nil, errors.Wrap(err, "couldn't marshal list value")
 			}
@@ -343,7 +422,13 @@ func (p *Payload) unmarshal(key string, val Element) error {
 		if val.Code != Atom {
 			return ErrBadPayload
 		}
-		eName := string(val.Val)
+
+		var eName string
+		err = val.Unmarshal(&eName)
+		if err != nil {
+			return errors.Wrap(err, "bad payload")
+		}
+
 		if eName != "nil" {
 			p.EventName = &eName
 		}
@@ -354,15 +439,19 @@ func (p *Payload) unmarshal(key string, val Element) error {
 		}
 
 		if val.Code == Atom {
-			eName := string(val.Val)
-			if eName != "nil" {
+			var eName string
+			err = val.Unmarshal(&eName)
+			if err != nil || eName != "nil" {
 				return ErrBadPayload
 			}
+
 		} else {
-			eVal, err := Int32SliceToInt(val.Val)
+			var eVal int
+			err = val.Unmarshal(&eVal)
 			if err != nil {
-				return ErrBadPayload
+				return errors.Wrap(err, "bad payload")
 			}
+
 			p.SeqNum = &eVal
 		}
 
@@ -370,18 +459,23 @@ func (p *Payload) unmarshal(key string, val Element) error {
 		if val.Code != Int8 {
 			return ErrBadPayload
 		}
-		if len(val.Val) != 1 {
-			return ErrBadPayload
+
+		var eVal int
+		err = val.Unmarshal(&eVal)
+		if err != nil {
+			return errors.Wrap(err, "bad payload")
 		}
-		p.OpCode = constants.OpCode(val.Val[0])
+		p.OpCode = constants.OpCode(eVal)
+
 	case "d":
 		if val.Code != Map {
 			return ErrBadPayload
 		}
 
-		p.Data, err = ElementSliceToElementMap(val.Vals)
+		p.Data = map[string]Element{}
+		err = val.Unmarshal(p.Data)
 		if err != nil {
-			return ErrBadPayload
+			return errors.Wrap(err, "bad payload")
 		}
 	default:
 		return ErrBadPayload
@@ -391,16 +485,18 @@ func (p *Payload) unmarshal(key string, val Element) error {
 
 func unmarshalSlice(raw []byte, numElements int) (uint32, []Element, error) {
 	var size int
-	e := make([]Element, numElements)
 	var idx uint32
 	var deltaIdx uint32
 	var err error
+
+	e := make([]Element, numElements)
+
 	for i := 0; i < numElements; i++ {
 		e[i].Code = ETFCode(raw[idx])
 		idx++
 		switch e[i].Code {
 		case Map:
-			size, err := Int32SliceToInt(raw[idx : idx+4])
+			size, err = Int32SliceToInt(raw[idx : idx+4])
 			if err != nil {
 				return 0, nil, errors.Wrap(err, "could not read map length")
 			}

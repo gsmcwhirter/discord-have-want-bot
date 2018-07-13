@@ -85,21 +85,3 @@ func ElementMapToElementSlice(m map[string]Element) []Element {
 
 	return e
 }
-
-// ElementSliceToElementMap TODOC
-func ElementSliceToElementMap(e []Element) (map[string]Element, error) {
-	if len(e)%2 != 0 {
-		return nil, ErrBadParity
-	}
-
-	m := map[string]Element{}
-	for i := 0; i < len(e); i += 2 {
-		if e[i].Code != Atom {
-			return nil, ErrBadFieldType
-		}
-
-		m[string(e[i].Val)] = e[i+1]
-	}
-
-	return m, nil
-}

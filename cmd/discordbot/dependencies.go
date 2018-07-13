@@ -38,14 +38,14 @@ func createDependencies(conf config) (d *dependencies, err error) {
 	}
 
 	d.httpClient = httpclient.NewHTTPClient(d)
-	d.wsClient = wsclient.NewWSClient(d, wsclient.Options{})
+	d.wsClient = wsclient.NewWSClient(d, wsclient.Options{MaxConcurrentHandlers: conf.NumWorkers})
 
 	return
 }
 
 func (d *dependencies) Close() {
 	if d.db != nil {
-		d.db.Close()
+		d.db.Close() // nolint: errcheck
 	}
 
 	if d.wsClient != nil {

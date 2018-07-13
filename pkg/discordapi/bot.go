@@ -5,6 +5,9 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
+	"os"
+	"os/signal"
+	"sync"
 	"time"
 
 	"github.com/go-kit/kit/log/level"
@@ -47,7 +50,7 @@ type hbReconfig struct {
 
 type discordBot struct {
 	config        BotConfig
-	discordClient discordMessageHandler
+	discordClient *discordMessageHandler
 	deps          dependencies
 	httpHeaders   http.Header
 
@@ -62,6 +65,8 @@ func NewDiscordBot(deps dependencies, conf BotConfig) DiscordBot {
 		config:      conf,
 		deps:        deps,
 		httpHeaders: http.Header{},
+
+		heartbeats: make(chan hbReconfig),
 	}
 
 	d.httpHeaders.Add("Authorization", fmt.Sprintf("Bot %s", d.config.BotToken))
@@ -84,7 +89,7 @@ func (d *discordBot) AuthenticateAndConnect() error {
 		return err
 	}
 
-	level.Debug(logger).Log(
+	_ = level.Debug(logger).Log(
 		"response_body", body,
 		"response_bytes", bodySize,
 	)
@@ -95,12 +100,12 @@ func (d *discordBot) AuthenticateAndConnect() error {
 		return err
 	}
 
-	level.Debug(logger).Log(
+	_ = level.Debug(logger).Log(
 		"gateway_url", respData.URL,
 		"gateway_shards", respData.Shards,
 	)
 
-	d.discordClient = newDiscordMessageHandler(d.deps)
+	d.discordClient = newDiscordMessageHandler(d.deps, d.heartbeats)
 
 	connectURL, err := url.Parse(respData.URL)
 	if err != nil {
@@ -111,7 +116,7 @@ func (d *discordBot) AuthenticateAndConnect() error {
 	q.Add("encoding", "etf")
 	connectURL.RawQuery = q.Encode()
 
-	level.Info(logger).Log(
+	_ = level.Info(logger).Log(
 		"message", "connecting to gateway",
 		"gateway_url", connectURL.String(),
 	)
@@ -129,7 +134,7 @@ func (d *discordBot) AuthenticateAndConnect() error {
 	botPermissions |= 0x00000400 // view channel (including read messages)
 	botPermissions |= 0x00000800 // send messages
 
-	fmt.Printf("To add to a guild, go to: https://discordapp.com/api/oauth2/authorize?client_id=%s&scope=bot&permissions=%d\n", d.config.ClientID, botPermissions)
+	fmt.Printf("\nTo add to a guild, go to: https://discordapp.com/api/oauth2/authorize?client_id=%s&scope=bot&permissions=%d\n\n", d.config.ClientID, botPermissions)
 
 	return nil
 }
@@ -140,26 +145,55 @@ func (d *discordBot) Disconnect() error {
 }
 
 func (d *discordBot) Run() {
-	done := make(chan struct{})
-	defer close(done)
+	_ = level.Debug(d.deps.Logger()).Log("message", "setting bot signal watcher")
+	interrupt := make(chan os.Signal, 2)
+	defer func() {
+		for range interrupt {
+		}
+	}()
+	defer close(interrupt)
+	signal.Notify(interrupt, os.Interrupt)
 
-	go d.heartbeatHandler(done)
-	d.deps.WSClient().HandleRequests(d.config.NumWorkers)
-
+	wg := sync.WaitGroup{}
+	wg.Add(1)
+	go d.heartbeatHandler(&wg, interrupt)
+	d.deps.WSClient().HandleRequests()
+	wg.Wait()
 }
 
-func (d *discordBot) heartbeatHandler(done chan struct{}) {
-	for {
-		if d.heartbeat == nil {
-			time.Sleep(200 * time.Millisecond)
-			continue
-		}
+func (d *discordBot) heartbeatHandler(wg *sync.WaitGroup, done chan os.Signal) {
+	defer wg.Done()
 
+	_ = level.Debug(d.deps.Logger()).Log("message", "waiting for heartbeat config")
+
+	// wait for init
+	if d.heartbeat == nil {
 		select {
-		case <-done:
+		case sig := <-done:
+			_ = level.Info(d.deps.Logger()).Log("message", "heartbeat loop stopping before config")
+			done <- sig
 			return
 		case req := <-d.heartbeats:
 			if req.interval > 0 {
+				d.heartbeat = time.NewTicker(time.Duration(req.interval) * time.Millisecond)
+				_ = level.Info(d.deps.Logger()).Log("message", "starting heartbeat loop", "interval", req.interval)
+			}
+		}
+
+	}
+
+	// in the groove
+	for {
+		select {
+		case sig := <-done: // quit
+			_ = level.Info(d.deps.Logger()).Log("message", "heartbeat quitting at request")
+			done <- sig
+			d.heartbeat.Stop()
+			return
+
+		case req := <-d.heartbeats: // reconfigure
+			if req.interval > 0 {
+				_ = level.Info(d.deps.Logger()).Log("message", "reconfiguring heartbeat loop", "interval", req.interval)
 				d.heartbeat.Stop()
 				d.heartbeat = time.NewTicker(time.Duration(req.interval) * time.Millisecond)
 			} else {
@@ -167,9 +201,14 @@ func (d *discordBot) heartbeatHandler(done chan struct{}) {
 				if ctx == nil {
 					ctx = util.NewRequestContext()
 				}
+
+				_ = level.Debug(logging.WithContext(ctx, d.deps.Logger())).Log("message", "manual heartbeat requested")
+
 				d.deps.WSClient().SendMessage(d.discordClient.FormatHeartbeat(ctx, d.lastSequence))
 			}
-		case <-d.heartbeat.C:
+
+		case <-d.heartbeat.C: // tick
+			_ = level.Debug(d.deps.Logger()).Log("message", "bum-bum")
 			ctx := util.NewRequestContext()
 			d.deps.WSClient().SendMessage(d.discordClient.FormatHeartbeat(ctx, d.lastSequence))
 		}

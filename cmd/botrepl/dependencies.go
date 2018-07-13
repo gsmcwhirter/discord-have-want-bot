@@ -37,7 +37,7 @@ func createDependencies(conf config) (d *dependencies, err error) {
 
 func (d *dependencies) Close() {
 	if d.db != nil {
-		d.db.Close()
+		d.db.Close() // nolint: errcheck
 	}
 }
 
