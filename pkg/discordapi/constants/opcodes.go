@@ -1,5 +1,7 @@
 package constants
 
+import "fmt"
+
 // OpCode TODOC
 type OpCode int
 
@@ -15,3 +17,28 @@ const (
 	Reconnect             = 7
 	Hello                 = 10
 )
+
+func (c OpCode) String() string {
+	switch c {
+	case Heartbeat:
+		return "Heartbeat"
+	case HeartbeatAck:
+		return "HeartbeatAck"
+	case Identify:
+		return "Identify"
+	case InvalidSession:
+		return "InvalidSession"
+	case Resume:
+		return "Resume"
+	case Dispatch:
+		return "Dispatch"
+	case StatusUpdate:
+		return "StatusUpdate"
+	case Reconnect:
+		return "Reconnect"
+	case Hello:
+		return "Hello"
+	default:
+		return fmt.Sprintf("(unknown: %d)", int(c))
+	}
+}

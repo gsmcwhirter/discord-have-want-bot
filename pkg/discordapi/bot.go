@@ -14,6 +14,7 @@ import (
 
 	"github.com/go-kit/kit/log"
 
+	"github.com/gsmcwhirter/eso-discord/pkg/discordapi/etfapi/payloads"
 	"github.com/gsmcwhirter/eso-discord/pkg/discordapi/jsonapi"
 	"github.com/gsmcwhirter/eso-discord/pkg/httpclient"
 	"github.com/gsmcwhirter/eso-discord/pkg/logging"
@@ -105,7 +106,7 @@ func (d *discordBot) AuthenticateAndConnect() error {
 		"gateway_shards", respData.Shards,
 	)
 
-	d.discordClient = newDiscordMessageHandler(d.deps, d.heartbeats)
+	d.discordClient = newDiscordMessageHandler(d, d.deps, d.heartbeats)
 
 	connectURL, err := url.Parse(respData.URL)
 	if err != nil {
@@ -157,7 +158,7 @@ func (d *discordBot) Run() {
 	wg := sync.WaitGroup{}
 	wg.Add(1)
 	go d.heartbeatHandler(&wg, interrupt)
-	d.deps.WSClient().HandleRequests()
+	d.deps.WSClient().HandleRequests(interrupt)
 	wg.Wait()
 }
 
@@ -204,13 +205,28 @@ func (d *discordBot) heartbeatHandler(wg *sync.WaitGroup, done chan os.Signal) {
 
 				_ = level.Debug(logging.WithContext(ctx, d.deps.Logger())).Log("message", "manual heartbeat requested")
 
-				d.deps.WSClient().SendMessage(d.discordClient.FormatHeartbeat(ctx, d.lastSequence))
+				m, err := payloads.ETFPayloadToMessage(ctx, payloads.HeartbeatPayload{
+					Sequence: d.lastSequence,
+				})
+				if err != nil {
+					_ = level.Error(logging.WithContext(ctx, d.deps.Logger())).Log("message", "error formatting heartbeat", "err", err)
+				} else {
+					d.deps.WSClient().SendMessage(m)
+				}
 			}
 
 		case <-d.heartbeat.C: // tick
 			_ = level.Debug(d.deps.Logger()).Log("message", "bum-bum")
 			ctx := util.NewRequestContext()
-			d.deps.WSClient().SendMessage(d.discordClient.FormatHeartbeat(ctx, d.lastSequence))
+
+			m, err := payloads.ETFPayloadToMessage(ctx, payloads.HeartbeatPayload{
+				Sequence: d.lastSequence,
+			})
+			if err != nil {
+				_ = level.Error(logging.WithContext(ctx, d.deps.Logger())).Log("message", "error formatting heartbeat", "err", err)
+			} else {
+				d.deps.WSClient().SendMessage(m)
+			}
 		}
 	}
 }

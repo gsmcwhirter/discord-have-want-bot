@@ -66,7 +66,7 @@ func (c httpClient) Get(ctx context.Context, url string, headers *http.Header) (
 	_ = level.Debug(logger).Log(
 		"message", "http get start",
 		"url", url,
-		"headers",
+		"headers", headers,
 	)
 	start := time.Now()
 	resp, err := c.client.Do(req)

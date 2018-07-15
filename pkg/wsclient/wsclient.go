@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"net/http"
 	"os"
-	"os/signal"
 	"sync"
 	"time"
 
@@ -17,11 +16,35 @@ import (
 	"github.com/gsmcwhirter/eso-discord/pkg/util"
 )
 
+// MessageType TODOC
+type MessageType int
+
+// Websocket Message types
+const (
+	Text   MessageType = 1
+	Binary             = 2
+)
+
+func (t MessageType) String() string {
+	switch t {
+	case Text:
+		return "Text"
+	case Binary:
+		return "Binary"
+	default:
+		return fmt.Sprintf("(unknown: %d)", int(t))
+	}
+}
+
 // WSMessage TODOC
 type WSMessage struct {
 	Ctx             context.Context
-	MessageType     int
+	MessageType     MessageType
 	MessageContents []byte
+}
+
+func (m WSMessage) String() string {
+	return fmt.Sprintf("WSMessage{Type=%v, Contents=%v}", m.MessageType, m.MessageContents)
 }
 
 // WSClient TODOC
@@ -30,7 +53,7 @@ type WSClient interface {
 	SetHandler(MessageHandler)
 	Connect(string) error
 	Close()
-	HandleRequests()
+	HandleRequests(interrupt chan os.Signal)
 	SendMessage(msg WSMessage)
 }
 
@@ -154,16 +177,7 @@ func (c *wsClient) Close() {
 	}
 }
 
-func (c *wsClient) HandleRequests() {
-	_ = level.Debug(c.deps.Logger()).Log("message", "setting signal watcher")
-	interrupt := make(chan os.Signal, 2)
-	defer func() {
-		for range interrupt { // clear out the interrupt channel after the controls are done
-		}
-	}()
-	defer close(interrupt)
-	signal.Notify(interrupt, os.Interrupt)
-
+func (c *wsClient) HandleRequests(interrupt chan os.Signal) {
 	_ = level.Debug(c.deps.Logger()).Log("message", "starting response handler")
 	c.controls.Add(1)
 	go c.handleResponses(interrupt)
@@ -192,9 +206,10 @@ func (c *wsClient) gracefulClose() {
 	}
 }
 
-func (c *wsClient) doReads() {
+func (c *wsClient) doReads(readerDone chan<- struct{}) {
 	defer c.controls.Done()
 	defer level.Info(c.deps.Logger()).Log("message", "websocket reader done")
+	defer close(readerDone)
 
 	for {
 		msgType, msg, err := c.conn.ReadMessage()
@@ -202,12 +217,14 @@ func (c *wsClient) doReads() {
 			_ = level.Error(c.deps.Logger()).Log(
 				"message", "read error",
 				"error", err,
+				"ws_msg_type", msgType,
+				"ws_content", msg,
 			)
 			return
 		}
 
 		ctx := util.NewRequestContext()
-		mT := msgType
+		mT := MessageType(msgType)
 		mC := make([]byte, len(msg))
 		copy(mC, msg)
 
@@ -234,10 +251,17 @@ func (c *wsClient) readMessages(interrupt chan os.Signal) {
 	defer c.controls.Done()
 	defer level.Info(c.deps.Logger()).Log("message", "readMessages shutdown complete")
 
+	readerDone := make(chan struct{})
+
 	c.controls.Add(1)
-	go c.doReads()
+	go c.doReads(readerDone)
 
 	select {
+	case <-readerDone:
+		_ = level.Info(c.deps.Logger()).Log("message", "readMessages doReads error -- shutting down")
+		interrupt <- os.Interrupt
+		c.gracefulClose()
+		return
 	case sig := <-interrupt:
 		_ = level.Info(c.deps.Logger()).Log("message", "readMessages received interrupt -- shutting down")
 		interrupt <- sig // allows other things to respond also
@@ -301,7 +325,7 @@ func (c *wsClient) handleResponses(interrupt chan os.Signal) { //nolint: gocyclo
 			)
 
 			start := time.Now()
-			err := c.conn.WriteMessage(resp.MessageType, resp.MessageContents)
+			err := c.conn.WriteMessage(int(resp.MessageType), resp.MessageContents)
 
 			_ = level.Debug(logging.WithContext(resp.Ctx, c.deps.Logger())).Log(
 				"message", "done sending message",
