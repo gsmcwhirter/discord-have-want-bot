@@ -78,8 +78,10 @@ vet:  ## Run the linter
 	$Q gometalinter -e S1008 --disable=gocyclo --disable=megacheck --disable=gas --deadline 60s -s jsonapi $(GOPATH)/src/$(PROJECT)/cmd/...
 	$Q gometalinter -e S1008 --disable=gocyclo --disable=megacheck --disable=gas --deadline 60s -s jsonapi $(GOPATH)/src/$(PROJECT)/pkg/...
 
-release-upload: release
-	$Q scp ./bin/discordbot ./config.toml ./eso-have-want-bot.service $(SERVER)
+release-upload: release upload
+
+upload:
+	$Q scp ./bin/discordbot ./config.toml ./eso-have-want-bot.service ./install.sh $(SERVER)
 
 help:  ## Show the help message
 	@awk 'BEGIN {FS = ":.*?## "} /^[a-zA-Z_-]+:.*?## / {printf "\033[36m%-30s\033[0m %s\n", $$1, $$2}' ./Makefile
