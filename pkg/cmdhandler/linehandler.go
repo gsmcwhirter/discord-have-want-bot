@@ -11,9 +11,9 @@ type lineHandlerFunc struct {
 
 // NewLineHandler TODOC
 func NewLineHandler(f func(string, []rune) (string, error)) LineHandler {
-	return lineHandlerFunc{handler: f}
+	return &lineHandlerFunc{handler: f}
 }
 
-func (lh lineHandlerFunc) HandleLine(user string, line []rune) (string, error) {
+func (lh *lineHandlerFunc) HandleLine(user string, line []rune) (string, error) {
 	return lh.handler(user, line)
 }

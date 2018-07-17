@@ -195,7 +195,7 @@ func (c needCommands) item(user string, args []rune) (string, error) {
 }
 
 // CommandHandler TODOC
-func CommandHandler(deps dependencies) cmdhandler.CommandHandler {
+func CommandHandler(deps dependencies) *cmdhandler.CommandHandler {
 	p := parser.NewParser(parser.Options{
 		CmdIndicator: ' ',
 		KnownCommands: []string{

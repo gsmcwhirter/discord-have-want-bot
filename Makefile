@@ -23,11 +23,11 @@ Q = $(if $(filter 1,$V),,@)
 
 all: deps debug  ## Download dependencies and do a debug build
 
-build-debug: version proto easyjson
+build-debug: version proto generate
 	$Q go build -v -ldflags "-X main.AppName=$(APP_NAME) -X main.BuildVersion=$(VERSION) -X main.BuildSHA=$(GIT_SHA) -X main.BuildDate=$(BUILD_DATE)" -o bin/$(APP_NAME) -race $(PROJECT)/cmd/$(APP_NAME)
 	$Q go build -v -ldflags "-X main.AppName=$(REPL_NAME) -X main.BuildVersion=$(VERSION) -X main.BuildSHA=$(GIT_SHA) -X main.BuildDate=$(BUILD_DATE)" -o bin/$(REPL_NAME) -race $(PROJECT)/cmd/$(REPL_NAME)
 
-build-release: version proto easyjson
+build-release: version proto generate
 	$Q go build -v -ldflags "-s -w -X main.AppName=$(APP_NAME) -X main.BuildVersion=$(VERSION) -X main.BuildSHA=$(GIT_SHA) -X main.BuildDate=$(BUILD_DATE)" -o bin/$(APP_NAME) $(PROJECT)/cmd/$(APP_NAME)
 	$Q go build -v -ldflags "-s -w -X main.AppName=$(REPL_NAME) -X main.BuildVersion=$(VERSION) -X main.BuildSHA=$(GIT_SHA) -X main.BuildDate=$(BUILD_DATE)" -o bin/$(REPL_NAME) $(PROJECT)/cmd/$(REPL_NAME)
 
@@ -36,10 +36,8 @@ proto: pkg/storage/storage.pb.go  ## Compile the protobuf files
 pkg/storage/storage.pb.go: pkg/storage/storage.proto
 	protoc --go_out=pkg/storage --proto_path=pkg/storage pkg/storage/storage.proto
 
-easyjson: pkg/discordapi/jsonapi/discord_formats_easyjson.go
-
-pkg/discordapi/jsonapi/discord_formats_easyjson.go: pkg/discordapi/jsonapi/discord_formats.go
-	$Q easyjson -all -snake_case $(GOPATH)/src/$(PROJECT)/pkg/discordapi/jsonapi/discord_formats.go
+generate:
+	$Q go generate ./...
 
 build-release-bundles: build-release
 	$Q gzip -k -f bin/$(APP_NAME)

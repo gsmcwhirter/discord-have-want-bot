@@ -2,7 +2,9 @@ package httpclient
 
 import (
 	"context"
+	"fmt"
 	"io"
+	"io/ioutil"
 	"net/http"
 	"time"
 
@@ -14,8 +16,11 @@ import (
 
 // HTTPClient TODOC
 type HTTPClient interface {
+	SetHeaders(http.Header)
 	Get(context.Context, string, *http.Header) (*http.Response, error)
+	GetBody(context.Context, string, *http.Header) (*http.Response, []byte, error)
 	Post(context.Context, string, *http.Header, io.Reader) (*http.Response, error)
+	PostBody(context.Context, string, *http.Header, io.Reader) (*http.Response, []byte, error)
 }
 
 type dependencies interface {
@@ -30,7 +35,7 @@ type httpClient struct {
 
 // NewHTTPClient TODOC
 func NewHTTPClient(deps dependencies) HTTPClient {
-	return httpClient{
+	return &httpClient{
 		deps:    deps,
 		client:  &http.Client{},
 		headers: http.Header{},
@@ -50,12 +55,17 @@ func addHeaders(to *http.Header, from http.Header) {
 	}
 }
 
-func (c httpClient) Get(ctx context.Context, url string, headers *http.Header) (*http.Response, error) {
+func (c *httpClient) SetHeaders(h http.Header) {
+	addHeaders(&c.headers, h)
+}
+
+// Get TODOC
+func (c *httpClient) Get(ctx context.Context, url string, headers *http.Header) (resp *http.Response, err error) {
 	logger := logging.WithContext(ctx, c.deps.Logger())
 
 	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
-		return nil, err
+		return
 	}
 
 	addHeaders(&req.Header, c.headers)
@@ -66,45 +76,122 @@ func (c httpClient) Get(ctx context.Context, url string, headers *http.Header) (
 	_ = level.Debug(logger).Log(
 		"message", "http get start",
 		"url", url,
-		"headers", headers,
+		"headers", fmt.Sprintf("%+v", req.Header),
 	)
 	start := time.Now()
-	resp, err := c.client.Do(req)
+	resp, err = c.client.Do(req)
 	_ = level.Debug(logger).Log(
 		"message", "http get complete",
 		"duration_ns", time.Since(start).Nanoseconds(),
 		"status_code", resp.StatusCode,
 	)
+	if err != nil {
+		return
+	}
+	defer resp.Body.Close()
 
-	return resp, err
+	return
 }
 
-func (c httpClient) Post(ctx context.Context, url string, headers *http.Header, body io.Reader) (*http.Response, error) {
+func (c *httpClient) GetBody(ctx context.Context, url string, headers *http.Header) (resp *http.Response, body []byte, err error) {
 	logger := logging.WithContext(ctx, c.deps.Logger())
-	reqHeaders := http.Header{}
-	addHeaders(&reqHeaders, c.headers)
-	if headers != nil {
-		addHeaders(&reqHeaders, *headers)
+
+	req, err := http.NewRequest("GET", url, nil)
+	if err != nil {
+		return
 	}
+
+	addHeaders(&req.Header, c.headers)
+	if headers != nil {
+		addHeaders(&req.Header, *headers)
+	}
+
+	_ = level.Debug(logger).Log(
+		"message", "http get start",
+		"url", url,
+		"headers", fmt.Sprintf("%+v", req.Header),
+	)
+	start := time.Now()
+	resp, err = c.client.Do(req)
+	_ = level.Debug(logger).Log(
+		"message", "http get complete",
+		"duration_ns", time.Since(start).Nanoseconds(),
+		"status_code", resp.StatusCode,
+	)
+	if err != nil {
+		return
+	}
+	defer resp.Body.Close()
+	body, err = ioutil.ReadAll(resp.Body)
+
+	return
+}
+
+func (c *httpClient) Post(ctx context.Context, url string, headers *http.Header, body io.Reader) (resp *http.Response, err error) {
+	logger := logging.WithContext(ctx, c.deps.Logger())
 
 	req, err := http.NewRequest("POST", url, body)
 	if err != nil {
-		return nil, err
+		return
+	}
+
+	addHeaders(&req.Header, c.headers)
+	if headers != nil {
+		addHeaders(&req.Header, *headers)
 	}
 
 	_ = level.Debug(logger).Log(
 		"message", "http post start",
 		"url", url,
+		"headers", fmt.Sprintf("%+v", req.Header),
 	)
 
 	start := time.Now()
-	resp, err := c.client.Do(req)
-
+	resp, err = c.client.Do(req)
 	_ = level.Debug(logger).Log(
 		"message", "http post complete",
 		"duration_ns", time.Since(start).Nanoseconds(),
 		"status_code", resp.StatusCode,
 	)
+	if err != nil {
+		return
+	}
+	defer resp.Body.Close()
 
-	return resp, err
+	return
+}
+
+func (c *httpClient) PostBody(ctx context.Context, url string, headers *http.Header, body io.Reader) (resp *http.Response, respBody []byte, err error) {
+	logger := logging.WithContext(ctx, c.deps.Logger())
+
+	req, err := http.NewRequest("POST", url, body)
+	if err != nil {
+		return
+	}
+
+	addHeaders(&req.Header, c.headers)
+	if headers != nil {
+		addHeaders(&req.Header, *headers)
+	}
+
+	_ = level.Debug(logger).Log(
+		"message", "http post start",
+		"url", url,
+		"headers", fmt.Sprintf("%+v", req.Header),
+	)
+
+	start := time.Now()
+	resp, err = c.client.Do(req)
+	_ = level.Debug(logger).Log(
+		"message", "http post complete",
+		"duration_ns", time.Since(start).Nanoseconds(),
+		"status_code", resp.StatusCode,
+	)
+	if err != nil {
+		return
+	}
+	defer resp.Body.Close()
+	respBody, err = ioutil.ReadAll(resp.Body)
+
+	return
 }

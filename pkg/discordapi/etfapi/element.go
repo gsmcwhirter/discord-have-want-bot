@@ -162,82 +162,135 @@ func (e *Element) WriteTo(b io.Writer) (int64, error) {
 	return int64(n), err
 }
 
-// Unmarshal TODOC
-func (e *Element) Unmarshal(target interface{}) error {
-	var err error
+// ToString TODOC
+func (e *Element) ToString() (string, error) {
 	switch e.Code {
 	case Atom:
-		v, ok := target.(*string)
-		if !ok {
-			return errors.Wrap(ErrBadTarget, "needed *string")
-		}
-
-		*v = string(e.Val)
-
-		return nil
-
+		fallthrough
+	case String:
+		fallthrough
 	case Binary:
-		v, ok := target.([]byte)
-		if !ok {
-			return errors.Wrap(ErrBadTarget, "needed []byte")
-		}
+		return string(e.Val), nil
+	default:
+		return "", errors.Wrap(ErrBadTarget, "cannot convert to string")
+	}
+}
 
-		if len(v) < len(e.Val) {
-			return errors.Wrap(ErrBadTarget, "target buffer too small")
-		}
+// ToBytes TODOC
+func (e *Element) ToBytes() ([]byte, error) {
+	switch e.Code {
+	case Atom:
+		fallthrough
+	case String:
+		fallthrough
+	case Binary:
+		b := make([]byte, len(e.Val))
+		copy(b, e.Val)
+		return b, nil
+	default:
+		return nil, errors.Wrap(ErrBadTarget, "cannot convert to []byte")
+	}
+}
 
-		copy(v, e.Val)
-
-		return nil
-	case Int32:
-		v, ok := target.(*int)
-		if !ok {
-			return errors.Wrap(ErrBadTarget, "needed *int")
-		}
-
-		*v, err = Int32SliceToInt(e.Val)
-
-		return errors.Wrap(err, "could not unmarshal int32")
+// ToInt TODOC
+func (e *Element) ToInt() (int, error) {
+	switch e.Code {
 	case Int8:
-		v, ok := target.(*int)
-		if !ok {
-			return errors.Wrap(ErrBadTarget, "needed *int")
+		return Int8SliceToInt(e.Val)
+	case Int32:
+		return Int32SliceToInt(e.Val)
+	default:
+		return 0, errors.Wrap(ErrBadTarget, "cannot convert to int")
+	}
+}
+
+// ToInt64 TODOC
+func (e *Element) ToInt64() (int64, error) {
+	switch e.Code {
+	case Int8:
+		v, err := Int8SliceToInt(e.Val)
+		return int64(v), err
+	case Int32:
+		v, err := Int32SliceToInt(e.Val)
+		return int64(v), err
+	case SmallBig:
+		fallthrough
+	case LargeBig:
+		v, err := IntNSliceToInt64(e.Val[1:])
+		if e.Val[0] == 1 {
+			v *= -1
 		}
 
-		*v, err = Int8SliceToInt(e.Val)
+		return v, err
+	default:
+		return 0, errors.Wrap(ErrBadTarget, "cannot convert to int64")
+	}
+}
 
-		return errors.Wrap(err, "could not unmarshal int8")
+// ToMap TODOC
+func (e *Element) ToMap() (map[string]Element, error) {
+	switch e.Code {
 	case Map:
-		v, ok := target.(map[string]Element)
-		if !ok {
-			return errors.Wrap(ErrBadTarget, "needed map[string]Element")
-		}
+		v := map[string]Element{}
 
 		if len(e.Vals)%2 != 0 {
-			return ErrBadParity
+			return nil, ErrBadParity
 		}
 
 		for i := 0; i < len(e.Vals); i += 2 {
-			if e.Vals[i].Code != Atom {
-				return ErrBadFieldType
+			k, err := e.Vals[i].ToString()
+			if err != nil {
+				return nil, ErrBadFieldType
 			}
-
-			v[string(e.Vals[i].Val)] = e.Vals[i+1]
+			v[k] = e.Vals[i+1]
 		}
 
-		return nil
-	case List:
-		return ErrNotImplemented
+		return v, nil
 	default:
-		return ErrBadElementData
+		return nil, errors.Wrap(ErrBadTarget, "cannot convert to map")
 	}
+}
+
+// IsNumeric TODOC
+func (e *Element) IsNumeric() bool {
+	return e.Code.IsNumeric()
+}
+
+// IsCollection TODOC
+func (e *Element) IsCollection() bool {
+	return e.Code.IsCollection()
+}
+
+// IsStringish TODOC
+func (e *Element) IsStringish() bool {
+	return e.Code.IsStringish()
+}
+
+// IsList TODOC
+func (e *Element) IsList() bool {
+	return e.Code.IsList()
+}
+
+// IsNil TODOC
+func (e *Element) IsNil() bool {
+	return e.Code == Atom && string(e.Val) == "nil"
+}
+
+// IsTrue TODOC
+func (e *Element) IsTrue() bool {
+	return e.Code == Atom && string(e.Val) == "true"
+}
+
+// IsFalse TODOC
+func (e *Element) IsFalse() bool {
+	return e.Code == Atom && string(e.Val) == "false"
 }
 
 // PrettyString TODOC
 func (e *Element) PrettyString(indent string, skipFirstIndent bool) string {
 	b := bytes.Buffer{}
 
-	if e.Code == Binary {
+	if e.Code.IsStringish() {
 		if skipFirstIndent {
 			indent = ""
 		}

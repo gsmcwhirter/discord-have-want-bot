@@ -22,10 +22,15 @@ func (r rootCommands) version(user string, args []rune) (string, error) {
 	return r.versionStr, nil
 }
 
+// Options TODOC
+type Options struct {
+	CmdIndicator rune
+}
+
 // CommandHandler TODOC
-func CommandHandler(deps dependencies, versionStr string) cmdhandler.CommandHandler {
+func CommandHandler(deps dependencies, versionStr string, opts Options) *cmdhandler.CommandHandler {
 	p := parser.NewParser(parser.Options{
-		CmdIndicator: '!',
+		CmdIndicator: opts.CmdIndicator,
 		KnownCommands: []string{
 			"help",
 			"version",

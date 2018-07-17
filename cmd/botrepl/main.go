@@ -85,7 +85,7 @@ func run() (int, error) {
 	}
 	defer deps.Close()
 
-	ch := commands.CommandHandler(deps, fmt.Sprintf("%s (%s) (%s)", BuildVersion, BuildSHA, BuildDate))
+	ch := commands.CommandHandler(deps, fmt.Sprintf("%s (%s) (%s)", BuildVersion, BuildSHA, BuildDate), commands.Options{CmdIndicator: '!'})
 
 	scanner := gonsole.NewReader(os.Stdin)
 	var line string

@@ -7,6 +7,8 @@ import (
 	"io"
 
 	"github.com/pkg/errors"
+
+	"github.com/gsmcwhirter/eso-discord/pkg/snowflake"
 )
 
 func writeAtom(b *bytes.Buffer, val []byte) error {
@@ -312,8 +314,8 @@ func Int32SliceToInt(v []byte) (int, error) {
 	return int(binary.BigEndian.Uint32(v)), nil
 }
 
-// IntNSliceToInt TODOC
-func IntNSliceToInt(v []byte) (int, error) {
+// IntNSliceToInt64 TODOC
+func IntNSliceToInt64(v []byte) (int64, error) {
 	var newV []byte
 
 	if len(v) > 8 {
@@ -327,7 +329,7 @@ func IntNSliceToInt(v []byte) (int, error) {
 		newV = v
 	}
 
-	return int(binary.BigEndian.Uint64(newV)), nil
+	return int64(binary.LittleEndian.Uint64(newV)), nil
 }
 
 // ElementMapToElementSlice TODOC
@@ -344,4 +346,27 @@ func ElementMapToElementSlice(m map[string]Element) ([]Element, error) {
 	}
 
 	return e, nil
+}
+
+// MapAndIDFromElement TODOC
+func MapAndIDFromElement(e Element) (eMap map[string]Element, id snowflake.Snowflake, err error) {
+	eMap, err = e.ToMap()
+	if err != nil {
+		err = errors.Wrap(err, "could not inflate element to map")
+		return
+	}
+
+	id, err = SnowflakeFromElement(eMap["id"])
+	err = errors.Wrap(err, "could not get id snowflake.Snowflake")
+	return
+}
+
+// SnowflakeFromElement TODOC
+func SnowflakeFromElement(e Element) (s snowflake.Snowflake, err error) {
+	temp, err := e.ToInt64()
+	if err != nil {
+		err = errors.Wrap(err, "could not unmarshal snowflake.Snowflake")
+	}
+	s = snowflake.Snowflake(temp)
+	return
 }

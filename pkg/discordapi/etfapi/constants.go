@@ -58,10 +58,15 @@ func (c ETFCode) IsNumeric() bool {
 
 // IsCollection TODOC
 func (c ETFCode) IsCollection() bool {
-	return c == Map || c == List
+	return c == Map || c == List || c == EmptyList
 }
 
 // IsStringish TODOC
 func (c ETFCode) IsStringish() bool {
 	return c == Atom || c == String || c == Binary
+}
+
+// IsList TODOC
+func (c ETFCode) IsList() bool {
+	return c == List || c == EmptyList
 }

@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/gsmcwhirter/eso-discord/pkg/commands"
 	"github.com/gsmcwhirter/eso-discord/pkg/discordapi"
 	"github.com/gsmcwhirter/eso-discord/pkg/options"
 	"github.com/pelletier/go-toml"
@@ -26,6 +25,7 @@ type config struct {
 	ClientToken  string `toml:"client_token"`
 	Database     string `toml:"database"`
 	NumWorkers   int    `toml:"num_workers"`
+	ClientURL    string `toml:"client_url"`
 }
 
 func main() {
@@ -97,13 +97,14 @@ func run() (int, error) {
 	}
 	defer deps.Close()
 
-	_ = commands.CommandHandler(deps, fmt.Sprintf("%s (%s) (%s)", BuildVersion, BuildSHA, BuildDate))
 	botConfig := discordapi.BotConfig{
-		ClientID:     config.ClientID,
-		ClientSecret: config.ClientSecret,
-		BotToken:     config.ClientToken,
-		APIURL:       config.DiscordAPI,
-		NumWorkers:   config.NumWorkers,
+		ClientID:                config.ClientID,
+		ClientSecret:            config.ClientSecret,
+		BotToken:                config.ClientToken,
+		APIURL:                  config.DiscordAPI,
+		NumWorkers:              config.NumWorkers,
+		DefaultCommandIndicator: '!',
+		Version:                 fmt.Sprintf("%s (%s) (%s)", BuildVersion, BuildSHA, BuildDate),
 	}
 	bot := discordapi.NewDiscordBot(deps, botConfig)
 	err = bot.AuthenticateAndConnect()

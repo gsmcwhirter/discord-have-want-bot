@@ -25,3 +25,12 @@ var ErrOutOfBounds = errors.New("int value out of bounds")
 
 // ErrBadParity TODOC
 var ErrBadParity = errors.New("non-even list parity")
+
+// ErrMissingData TODOC
+var ErrMissingData = errors.New("missing data")
+
+// ErrBadData TODOC
+var ErrBadData = errors.New("bad data")
+
+// ErrNotFound TODOC
+var ErrNotFound = errors.New("not found")

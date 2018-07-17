@@ -1,23 +1,27 @@
 package main
 
 import (
+	"fmt"
+	"net/http"
 	"os"
 	"time"
 
 	bolt "github.com/coreos/bbolt"
 	"github.com/go-kit/kit/log"
 
+	"github.com/gsmcwhirter/eso-discord/pkg/cmdhandler"
 	"github.com/gsmcwhirter/eso-discord/pkg/httpclient"
 	"github.com/gsmcwhirter/eso-discord/pkg/storage"
 	"github.com/gsmcwhirter/eso-discord/pkg/wsclient"
 )
 
 type dependencies struct {
-	logger     log.Logger
-	db         *bolt.DB
-	userAPI    storage.UserAPI
-	httpClient httpclient.HTTPClient
-	wsClient   wsclient.WSClient
+	logger         log.Logger
+	db             *bolt.DB
+	userAPI        storage.UserAPI
+	httpClient     httpclient.HTTPClient
+	wsClient       wsclient.WSClient
+	commandHandler *cmdhandler.CommandHandler
 }
 
 func createDependencies(conf config) (d *dependencies, err error) {
@@ -38,6 +42,11 @@ func createDependencies(conf config) (d *dependencies, err error) {
 	}
 
 	d.httpClient = httpclient.NewHTTPClient(d)
+	h := http.Header{}
+	h.Add("User-Agent", fmt.Sprintf("DiscordBot (%s, %s)", conf.ClientURL, BuildVersion))
+	h.Add("Authorization", fmt.Sprintf("Bot %s", conf.ClientToken))
+	d.httpClient.SetHeaders(h)
+
 	d.wsClient = wsclient.NewWSClient(d, wsclient.Options{MaxConcurrentHandlers: conf.NumWorkers})
 
 	return

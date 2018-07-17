@@ -12,13 +12,16 @@ import (
 type Payload struct {
 	OpCode    constants.OpCode
 	SeqNum    *int
-	EventName *string
+	EventName string
 
-	Data        map[string]Element
-	DataElement *Element
+	Data     map[string]Element
+	DataList []Element
 }
 
 func (p Payload) String() string {
+	if p.DataList != nil {
+		return fmt.Sprintf("Payload{OpCode: %v, DataList: %v, SeqNum: %v, EventName: %v}", p.OpCode, p.DataList, p.SeqNum, p.EventName)
+	}
 	return fmt.Sprintf("Payload{OpCode: %v, Data: %+v, SeqNum: %v, EventName: %v}", p.OpCode, p.Data, p.SeqNum, p.EventName)
 }
 
@@ -127,7 +130,6 @@ func (p *Payload) Marshal() ([]byte, error) {
 
 // UnMarshal code
 func (p *Payload) unmarshal(key string, val Element) error {
-	var err error
 
 	switch key {
 	case "t":
@@ -135,14 +137,13 @@ func (p *Payload) unmarshal(key string, val Element) error {
 			return errors.Wrap(ErrBadPayload, "'t' was not an Atom")
 		}
 
-		var eName string
-		err = val.Unmarshal(&eName)
+		eName, err := val.ToString()
 		if err != nil {
 			return errors.Wrap(err, "bad payload")
 		}
 
 		if eName != "nil" {
-			p.EventName = &eName
+			p.EventName = eName
 		}
 
 	case "s":
@@ -151,15 +152,13 @@ func (p *Payload) unmarshal(key string, val Element) error {
 		}
 
 		if val.Code == Atom {
-			var eName string
-			err = val.Unmarshal(&eName)
+			eName, err := val.ToString()
 			if err != nil || eName != "nil" {
 				return errors.Wrap(ErrBadPayload, "'s' nil value error")
 			}
 
 		} else {
-			var eVal int
-			err = val.Unmarshal(&eVal)
+			eVal, err := val.ToInt()
 			if err != nil {
 				return errors.Wrap(err, "bad payload")
 			}
@@ -172,8 +171,7 @@ func (p *Payload) unmarshal(key string, val Element) error {
 			return errors.Wrap(ErrBadPayload, "'op' was not an Int8")
 		}
 
-		var eVal int
-		err = val.Unmarshal(&eVal)
+		eVal, err := val.ToInt()
 		if err != nil {
 			return errors.Wrap(err, "bad payload")
 		}
@@ -182,16 +180,21 @@ func (p *Payload) unmarshal(key string, val Element) error {
 	case "d":
 		switch val.Code {
 		case Map:
-			p.Data = map[string]Element{}
-			err = val.Unmarshal(p.Data)
+			var err error
+			p.Data, err = val.ToMap()
 			if err != nil {
 				return errors.Wrap(err, "bad payload")
 			}
 		case Atom:
-			val2 := val
-			p.DataElement = &val2
+			if !val.IsNil() {
+				return errors.Wrap(ErrBadPayload, "'d' was not a map or list")
+			}
+		case EmptyList:
+			fallthrough
+		case List:
+			p.DataList = val.Vals
 		default:
-			return errors.Wrap(ErrBadPayload, "'d' was not map or atom")
+			return errors.Wrap(ErrBadPayload, "'d' was not map or list")
 		}
 
 	default:
@@ -246,16 +249,20 @@ func (p *Payload) PrettyString(indent string, skipFirstIndent bool) string {
 	}
 
 	_, _ = b.WriteString(fmt.Sprintf("%s  OpCode: %v\n", indent, p.OpCode))
-	if p.EventName != nil {
-		_, _ = b.WriteString(fmt.Sprintf("%s  EventName: %v\n", indent, *p.EventName))
+	if p.EventName != "" {
+		_, _ = b.WriteString(fmt.Sprintf("%s  EventName: %v\n", indent, p.EventName))
 	}
 	if p.SeqNum != nil {
 		_, _ = b.WriteString(fmt.Sprintf("%s  SeqNum: %v\n", indent, *p.SeqNum))
 	}
 
-	if p.DataElement == nil {
-		_, _ = b.WriteString(fmt.Sprintf("%s  Data: ", indent))
-		_, _ = b.WriteString(p.DataElement.PrettyString(indent+"     ", true))
+	if p.DataList != nil {
+		_, _ = b.WriteString(fmt.Sprintf("%s  DataList: [\n", indent))
+		for _, v := range p.DataList {
+			_, _ = b.WriteString(v.PrettyString(indent+"     ", false))
+			_, _ = b.WriteString("\n")
+		}
+		_, _ = b.WriteString(fmt.Sprintf("%s  ]", indent))
 	} else {
 		_, _ = b.WriteString(fmt.Sprintf("%s  Data: {\n", indent))
 		for k, v := range p.Data {

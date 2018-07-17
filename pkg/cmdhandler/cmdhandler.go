@@ -18,19 +18,19 @@ type CommandHandler struct {
 }
 
 // NewCommandHandler TODOC
-func NewCommandHandler(parser parser.Parser) CommandHandler {
+func NewCommandHandler(parser parser.Parser) *CommandHandler {
 	ch := CommandHandler{
 		commands: map[string]LineHandler{},
 	}
 	ch.SetParser(parser)
 
 	ch.SetHandler("help", NewLineHandler(ch.showHelp))
-	return ch
+	return &ch
 }
 
-// Parser returns the parser for the command handler
-func (ch *CommandHandler) Parser() parser.Parser {
-	return ch.parser
+// CommandIndicator TODOC
+func (ch *CommandHandler) CommandIndicator() rune {
+	return ch.parser.LeadChar()
 }
 
 // SetParser sets the parser for the command handler
@@ -40,11 +40,11 @@ func (ch *CommandHandler) SetParser(p parser.Parser) {
 }
 
 func (ch *CommandHandler) calculateHelpCmd() {
-	ch.helpCmd = append([]rune{ch.Parser().LeadChar()}, []rune("help")...)
+	ch.helpCmd = append([]rune{ch.parser.LeadChar()}, []rune("help")...)
 }
 
 func (ch *CommandHandler) showHelp(user string, line []rune) (string, error) {
-	leadChar := string(ch.Parser().LeadChar())
+	leadChar := string(ch.parser.LeadChar())
 	helpStr := "Available Commands:\n"
 	for cmd := range ch.commands {
 		if cmd != "" {
@@ -60,11 +60,11 @@ func (ch *CommandHandler) SetHandler(cmd string, handler LineHandler) {
 }
 
 // HandleLine TODOC
-func (ch CommandHandler) HandleLine(user string, line []rune) (string, error) {
-	cmd, rest, err := ch.Parser().ParseCommand(line)
+func (ch *CommandHandler) HandleLine(user string, line []rune) (string, error) {
+	cmd, rest, err := ch.parser.ParseCommand(line)
 
 	if cmd == "" && err == parser.ErrUnknownCommand {
-		cmd, rest, err = ch.Parser().ParseCommand(ch.helpCmd)
+		cmd, rest, err = ch.parser.ParseCommand(ch.helpCmd)
 	}
 
 	if err == parser.ErrUnknownCommand {
