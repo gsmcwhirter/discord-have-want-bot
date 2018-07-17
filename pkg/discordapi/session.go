@@ -4,8 +4,6 @@ import (
 	"sync"
 
 	"github.com/gsmcwhirter/eso-discord/pkg/discordapi/etfapi"
-	"github.com/gsmcwhirter/eso-discord/pkg/parser"
-	"github.com/gsmcwhirter/eso-discord/pkg/snowflake"
 	"github.com/pkg/errors"
 )
 
@@ -14,8 +12,6 @@ type Session struct {
 	lock      sync.RWMutex
 	sessionID string
 	state     etfapi.State
-
-	guildParsers map[snowflake.Snowflake]parser.Parser
 }
 
 // ID TODOC
@@ -53,7 +49,7 @@ func (s *Session) UpsertChannelFromElement(e etfapi.Element) (err error) {
 	s.lock.Lock()
 	defer s.lock.Unlock()
 
-	s.state.UpsertChannelFromElement(e)
+	err = s.state.UpsertChannelFromElement(e)
 
 	return
 }
@@ -75,7 +71,7 @@ func (s *Session) UpdateFromReady(p *etfapi.Payload) (err error) {
 		return
 	}
 
-	s.state.UpdateFromReady(p)
+	err = s.state.UpdateFromReady(p)
 
 	return
 }

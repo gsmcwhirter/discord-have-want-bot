@@ -8,9 +8,9 @@ import (
 
 // GuildMember TODOC
 type GuildMember struct {
-	id    snowflake.Snowflake
-	roles []string
-	user  User
+	id   snowflake.Snowflake
+	user User
+	// roles []string
 }
 
 // GuildMemberFromElement TODOC

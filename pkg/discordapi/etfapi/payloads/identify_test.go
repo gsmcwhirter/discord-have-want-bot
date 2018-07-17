@@ -8,6 +8,8 @@ import (
 )
 
 func TestIdentifyPayload_Payload(t *testing.T) {
+	t.Skip()
+
 	type fields struct {
 		Token          string
 		Properties     IdentifyPayloadProperties

@@ -137,27 +137,21 @@ func (p *Payload) unmarshal(key string, val Element) error {
 			return errors.Wrap(ErrBadPayload, "'t' was not an Atom")
 		}
 
-		eName, err := val.ToString()
-		if err != nil {
-			return errors.Wrap(err, "bad payload")
-		}
+		if !val.IsNil() {
+			eName, err := val.ToString()
+			if err != nil {
+				return errors.Wrap(err, "bad payload")
+			}
 
-		if eName != "nil" {
 			p.EventName = eName
 		}
 
 	case "s":
-		if !val.Code.IsNumeric() && val.Code != Atom { // Atom for "nil"
+		if !val.Code.IsNumeric() && !val.IsNil() {
 			return errors.Wrap(ErrBadPayload, "'s' was not numeric")
 		}
 
-		if val.Code == Atom {
-			eName, err := val.ToString()
-			if err != nil || eName != "nil" {
-				return errors.Wrap(ErrBadPayload, "'s' nil value error")
-			}
-
-		} else {
+		if !val.IsNil() {
 			eVal, err := val.ToInt()
 			if err != nil {
 				return errors.Wrap(err, "bad payload")
@@ -198,8 +192,7 @@ func (p *Payload) unmarshal(key string, val Element) error {
 		}
 
 	default:
-		fmt.Println(key)
-		return ErrBadPayload
+		return errors.Wrap(ErrBadPayload, fmt.Sprintf("unknown key '%s'", key))
 	}
 	return nil
 }

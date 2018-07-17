@@ -99,7 +99,6 @@ func MessageFromElementMap(eMap map[string]Element) (m Message, err error) {
 	e2, ok = eMap["channel_id"]
 	if ok && !e2.IsNil() {
 		m.channelID, err = SnowflakeFromElement(e2)
-		fmt.Printf("\n***%v***%v***\n\n", m.channelID, e2)
 		if err != nil {
 			err = errors.Wrap(err, "could not get channel_id snowflake.Snowflake")
 			return
@@ -121,8 +120,7 @@ func MessageFromElementMap(eMap map[string]Element) (m Message, err error) {
 		}
 	}
 
-	e2, ok = eMap["author"]
-	m.author, err = UserFromElement(e2)
+	m.author, err = UserFromElement(eMap["author"])
 	if err != nil {
 		err = errors.Wrap(err, "could not inflate message author")
 		return

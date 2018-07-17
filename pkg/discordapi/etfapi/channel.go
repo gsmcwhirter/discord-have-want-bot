@@ -166,7 +166,6 @@ func ChannelFromElement(e Element) (c Channel, err error) {
 		return
 	}
 
-	c.UpdateFromElementMap(eMap)
-
+	err = c.UpdateFromElementMap(eMap)
 	return
 }

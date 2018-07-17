@@ -88,7 +88,7 @@ func (c *httpClient) Get(ctx context.Context, url string, headers *http.Header) 
 	if err != nil {
 		return
 	}
-	defer resp.Body.Close()
+	defer resp.Body.Close() //nolint: errcheck
 
 	return
 }
@@ -121,7 +121,7 @@ func (c *httpClient) GetBody(ctx context.Context, url string, headers *http.Head
 	if err != nil {
 		return
 	}
-	defer resp.Body.Close()
+	defer resp.Body.Close() //nolint: errcheck
 	body, err = ioutil.ReadAll(resp.Body)
 
 	return
@@ -156,7 +156,7 @@ func (c *httpClient) Post(ctx context.Context, url string, headers *http.Header,
 	if err != nil {
 		return
 	}
-	defer resp.Body.Close()
+	defer resp.Body.Close() //nolint: errcheck
 
 	return
 }
@@ -190,7 +190,7 @@ func (c *httpClient) PostBody(ctx context.Context, url string, headers *http.Hea
 	if err != nil {
 		return
 	}
-	defer resp.Body.Close()
+	defer resp.Body.Close() //nolint: errcheck
 	respBody, err = ioutil.ReadAll(resp.Body)
 
 	return

@@ -11,7 +11,7 @@ import (
 	"github.com/gsmcwhirter/eso-discord/pkg/snowflake"
 )
 
-func writeAtom(b *bytes.Buffer, val []byte) error {
+func writeAtom(b io.Writer, val []byte) error {
 	// assumes the Atom identifier byte has already been written
 	size, err := IntToInt16Slice(len(val))
 	if err != nil {
@@ -70,7 +70,7 @@ func marshalInterface(code ETFCode, val interface{}) ([]byte, error) {
 				return nil, errors.Wrap(ErrBadMarshalData, "bad map key")
 			}
 
-			v[i].WriteTo(&b)
+			_, err = v[i].WriteTo(&b)
 			if err != nil {
 				return nil, errors.Wrap(err, "couldn't marshal map key")
 			}

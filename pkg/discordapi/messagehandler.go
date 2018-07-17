@@ -62,7 +62,7 @@ func (c *discordMessageHandler) HandleRequest(req wsclient.WSMessage, resp chan<
 	default:
 	}
 
-	_ = level.Debug(logger).Log("message", "processing server message", "ws_msg", fmt.Sprintf("%v", []byte(req.MessageContents)))
+	_ = level.Debug(logger).Log("message", "processing server message", "ws_msg", fmt.Sprintf("%v", req.MessageContents))
 
 	p, err := etfapi.Unmarshal(req.MessageContents)
 	if err != nil {
@@ -170,11 +170,17 @@ func (c *discordMessageHandler) handleHello(p *etfapi.Payload, req wsclient.WSMe
 
 	if err != nil {
 		_ = level.Error(logger).Log("message", "error generating identify payload", "err", err)
-	} else {
-		c.bot.rateLimiter.Wait(req.Ctx)
-		_ = level.Debug(logger).Log("message", "sending response to channel", "message", m, "msg_len", len(m.MessageContents))
-		resp <- m
+		return
 	}
+
+	err = c.bot.rateLimiter.Wait(req.Ctx)
+	if err != nil {
+		_ = level.Error(logger).Log("message", "error ratelimiting", "err", err)
+		return
+	}
+
+	_ = level.Debug(logger).Log("message", "sending response to channel", "message", m, "msg_len", len(m.MessageContents))
+	resp <- m
 }
 
 func (c *discordMessageHandler) handleHeartbeat(p *etfapi.Payload, req wsclient.WSMessage, resp chan<- wsclient.WSMessage, done <-chan struct{}) {
@@ -198,8 +204,6 @@ func (c *discordMessageHandler) handleDispatch(p *etfapi.Payload, req wsclient.W
 		return
 	default:
 	}
-
-	fmt.Println(p.PrettyString("", false))
 
 	logger := logging.WithContext(req.Ctx, c.bot.deps.Logger())
 	eventHandler, ok := c.eventDispatch[p.EventName]
@@ -279,7 +283,12 @@ func (c *discordMessageHandler) handleMessage(p *etfapi.Payload, req wsclient.WS
 		respStr += fmt.Sprintf("\nError: %v\n", err)
 	}
 
-	c.bot.rateLimiter.Wait(req.Ctx)
+	err = c.bot.rateLimiter.Wait(req.Ctx)
+	if err != nil {
+		_ = level.Error(logger).Log("message", "error generating identify payload", "err", err)
+		return
+	}
+
 	msg := jsonapi.Message{
 		Content: fmt.Sprintf("%s\n%s", m.AuthorIDString(), respStr),
 	}
@@ -288,5 +297,6 @@ func (c *discordMessageHandler) handleMessage(p *etfapi.Payload, req wsclient.WS
 	if err != nil {
 		_ = level.Error(logger).Log("message", "could not send message", "err", err, "resp_body", string(body), "status_code", sendResp.StatusCode)
 	}
+
 	return
 }

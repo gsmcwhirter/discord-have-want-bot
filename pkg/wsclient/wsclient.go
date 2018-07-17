@@ -194,21 +194,22 @@ func (c *wsClient) HandleRequests(interrupt chan os.Signal) {
 
 func (c *wsClient) gracefulClose() {
 	close(c.done)
-	c.conn.SetReadDeadline(time.Now())
+	_ = c.conn.SetReadDeadline(time.Now())
 
 	// Close the socket connection gracefully
 	_ = level.Debug(c.deps.Logger()).Log("message", "gracefully closing the socket")
 	err := c.conn.WriteMessage(websocket.CloseMessage, websocket.FormatCloseMessage(websocket.CloseNormalClosure, ""))
 	if err != nil {
 		_ = level.Error(c.deps.Logger()).Log("message", "Unable to write websocket close message", "error", err)
-	} else {
-		_ = level.Debug(c.deps.Logger()).Log("message", "close message sent")
+		return
 	}
+
+	_ = level.Debug(c.deps.Logger()).Log("message", "close message sent")
 }
 
 func (c *wsClient) doReads(readerDone chan<- struct{}) {
 	defer c.controls.Done()
-	defer level.Info(c.deps.Logger()).Log("message", "websocket reader done")
+	defer level.Info(c.deps.Logger()).Log("message", "websocket reader done") //nolint: errcheck
 	defer close(readerDone)
 
 	for {
@@ -249,7 +250,7 @@ func (c *wsClient) doReads(readerDone chan<- struct{}) {
 
 func (c *wsClient) readMessages(interrupt chan os.Signal) {
 	defer c.controls.Done()
-	defer level.Info(c.deps.Logger()).Log("message", "readMessages shutdown complete")
+	defer level.Info(c.deps.Logger()).Log("message", "readMessages shutdown complete") //nolint: errcheck
 
 	readerDone := make(chan struct{})
 
@@ -296,7 +297,7 @@ func (c *wsClient) handleRequest(req WSMessage) {
 
 func (c *wsClient) handleResponses(interrupt chan os.Signal) { //nolint: gocyclo
 	defer c.controls.Done()
-	defer level.Info(c.deps.Logger()).Log("message", "handleResponses shutdown complete")
+	defer level.Info(c.deps.Logger()).Log("message", "handleResponses shutdown complete") //nolint: errcheck
 
 	for {
 		select {

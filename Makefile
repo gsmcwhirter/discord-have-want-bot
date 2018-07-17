@@ -4,6 +4,7 @@ GIT_SHA := $(shell git rev-parse HEAD)
 APP_NAME := discordbot
 REPL_NAME := botrepl
 PROJECT := github.com/gsmcwhirter/eso-discord
+SERVER := evogames.org:~/eso-discord/
 
 # can specify V=1 on the line with `make` to get verbose output
 V ?= 0
@@ -76,6 +77,9 @@ version:  ## Print the version string and git sha that would be recorded if a re
 vet:  ## Run the linter
 	$Q gometalinter -e S1008 --disable=gocyclo --disable=megacheck --disable=gas --deadline 60s -s jsonapi $(GOPATH)/src/$(PROJECT)/cmd/...
 	$Q gometalinter -e S1008 --disable=gocyclo --disable=megacheck --disable=gas --deadline 60s -s jsonapi $(GOPATH)/src/$(PROJECT)/pkg/...
+
+release-upload: release
+	$Q scp ./bin/discordbot ./config.toml ./eso-have-want-bot.service $(SERVER)
 
 help:  ## Show the help message
 	@awk 'BEGIN {FS = ":.*?## "} /^[a-zA-Z_-]+:.*?## / {printf "\033[36m%-30s\033[0m %s\n", $$1, $$2}' ./Makefile

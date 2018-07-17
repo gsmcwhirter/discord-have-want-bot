@@ -1,0 +1,20 @@
+[Unit]
+Description=eso-have-want-bot
+After=syslog.target network.target
+
+[Service]
+Type=simple
+
+LimitNOFILE=999996
+# LimitNProc=...
+
+ExecStart=/home/gsmcwhirter/eso-discord/bin/discordbot \
+            --config /home/gsmcwhirter/eso-discord/config.toml \
+            --database /home/gsmcwhirter/eso-discord/discordbot.db \
+            --num-workers 20
+
+KillMode=mixed
+KillSignal=SIGTERM
+
+Restart=always
+RestartSec=30

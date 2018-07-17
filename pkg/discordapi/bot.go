@@ -100,7 +100,10 @@ func (d *discordBot) AuthenticateAndConnect() error {
 	ctx := util.NewRequestContext()
 	logger := logging.WithContext(ctx, d.deps.Logger())
 
-	d.connectionRateLimiter.Wait(ctx)
+	err := d.connectionRateLimiter.Wait(ctx)
+	if err != nil {
+		return err
+	}
 
 	_, body, err := d.deps.HTTPClient().GetBody(ctx, fmt.Sprintf("%s/gateway/bot", d.config.APIURL), nil)
 	if err != nil {
@@ -164,7 +167,10 @@ func (d *discordBot) SendMessage(ctx context.Context, cid snowflake.Snowflake, m
 	}
 	r := bytes.NewReader(b)
 
-	d.rateLimiter.Wait(ctx)
+	err = d.rateLimiter.Wait(ctx)
+	if err != nil {
+		return nil, nil, err
+	}
 
 	header := http.Header{}
 	header.Add("Content-Type", "application/json")
@@ -268,10 +274,15 @@ func (d *discordBot) heartbeatHandler(wg *sync.WaitGroup, done chan os.Signal) {
 				})
 				if err != nil {
 					_ = level.Error(logging.WithContext(ctx, d.deps.Logger())).Log("message", "error formatting heartbeat", "err", err)
-				} else {
-					d.rateLimiter.Wait(m.Ctx)
-					d.deps.WSClient().SendMessage(m)
+					return
 				}
+
+				err = d.rateLimiter.Wait(m.Ctx)
+				if err != nil {
+					_ = level.Error(logging.WithContext(ctx, d.deps.Logger())).Log("message", "error rate limiting", "err", err)
+					return
+				}
+				d.deps.WSClient().SendMessage(m)
 			}
 
 		case <-d.heartbeat.C: // tick
@@ -283,10 +294,15 @@ func (d *discordBot) heartbeatHandler(wg *sync.WaitGroup, done chan os.Signal) {
 			})
 			if err != nil {
 				_ = level.Error(logging.WithContext(ctx, d.deps.Logger())).Log("message", "error formatting heartbeat", "err", err)
-			} else {
-				d.rateLimiter.Wait(m.Ctx)
-				d.deps.WSClient().SendMessage(m)
+				return
 			}
+
+			err = d.rateLimiter.Wait(m.Ctx)
+			if err != nil {
+				_ = level.Error(logging.WithContext(ctx, d.deps.Logger())).Log("message", "error rate limiting", "err", err)
+				return
+			}
+			d.deps.WSClient().SendMessage(m)
 		}
 	}
 }
