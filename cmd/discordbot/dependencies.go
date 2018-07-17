@@ -9,19 +9,17 @@ import (
 	bolt "github.com/coreos/bbolt"
 	"github.com/go-kit/kit/log"
 
-	"github.com/gsmcwhirter/eso-discord/pkg/cmdhandler"
 	"github.com/gsmcwhirter/eso-discord/pkg/httpclient"
 	"github.com/gsmcwhirter/eso-discord/pkg/storage"
 	"github.com/gsmcwhirter/eso-discord/pkg/wsclient"
 )
 
 type dependencies struct {
-	logger         log.Logger
-	db             *bolt.DB
-	userAPI        storage.UserAPI
-	httpClient     httpclient.HTTPClient
-	wsClient       wsclient.WSClient
-	commandHandler *cmdhandler.CommandHandler
+	logger     log.Logger
+	db         *bolt.DB
+	userAPI    storage.UserAPI
+	httpClient httpclient.HTTPClient
+	wsClient   wsclient.WSClient
 }
 
 func createDependencies(conf config) (d *dependencies, err error) {
