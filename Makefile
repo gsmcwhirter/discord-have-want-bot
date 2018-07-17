@@ -81,7 +81,8 @@ vet:  ## Run the linter
 release-upload: release upload
 
 upload:
-	$Q scp ./bin/$(REPL_NAME) ./bin/$(APP_NAME) ./bin/$(APP_NAME)-$(VERSION).gz ./config.toml ./eso-have-want-bot.service ./install.sh $(SERVER)
+	$Q scp ./bin/$(REPL_NAME) ./bin/$(APP_NAME).gz ./config.toml ./eso-have-want-bot.service ./install.sh $(SERVER)
+	$Q scp ./bin/$(APP_NAME)-$(VERSION).gz $(SERVER)
 
 help:  ## Show the help message
 	@awk 'BEGIN {FS = ":.*?## "} /^[a-zA-Z_-]+:.*?## / {printf "\033[36m%-30s\033[0m %s\n", $$1, $$2}' ./Makefile

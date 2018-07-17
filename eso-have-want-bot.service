@@ -10,7 +10,7 @@ Group=discordbot
 LimitNOFILE=999996
 # LimitNProc=...
 
-ExecStart=/home/gsmcwhirter/eso-discord/discordbot \
+ExecStart=/home/discordbot/eso-discord/discordbot \
             --config /home/discordbot/eso-discord/config.toml \
             --database /home/discordbot/eso-discord/discordbot.db \
             --num-workers 20

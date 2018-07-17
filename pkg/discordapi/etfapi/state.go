@@ -32,6 +32,7 @@ func (s *State) UpdateFromReady(p *Payload) (err error) {
 		return
 	}
 
+	s.privateChannels = map[snowflake.Snowflake]Channel{}
 	e, ok = p.Data["private_channels"]
 	if !ok {
 		err = errors.Wrap(ErrMissingData, "missing private_channels")
@@ -41,8 +42,6 @@ func (s *State) UpdateFromReady(p *Payload) (err error) {
 		err = errors.Wrap(ErrBadData, "private_channels was not a list")
 		return
 	}
-
-	s.privateChannels = map[snowflake.Snowflake]Channel{}
 	for _, e2 = range e.Vals {
 		c, err = ChannelFromElement(e2)
 		if err != nil {
@@ -52,6 +51,7 @@ func (s *State) UpdateFromReady(p *Payload) (err error) {
 		s.privateChannels[c.id] = c
 	}
 
+	s.guilds = map[snowflake.Snowflake]Guild{}
 	e, ok = p.Data["guilds"]
 	if !ok {
 		err = errors.Wrap(ErrMissingData, "missing guilds")
@@ -61,7 +61,6 @@ func (s *State) UpdateFromReady(p *Payload) (err error) {
 		err = errors.Wrap(ErrBadData, "guilds was not a list")
 		return
 	}
-	s.guilds = map[snowflake.Snowflake]Guild{}
 	for _, e2 = range e.Vals {
 		g, err = GuildFromElement(e2)
 		if err != nil {
