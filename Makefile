@@ -4,7 +4,7 @@ GIT_SHA := $(shell git rev-parse HEAD)
 APP_NAME := discordbot
 REPL_NAME := botrepl
 PROJECT := github.com/gsmcwhirter/eso-discord
-SERVER := evogames.org:~/eso-discord/
+SERVER := discordbot@evogames.org:~/eso-discord/
 
 # can specify V=1 on the line with `make` to get verbose output
 V ?= 0
@@ -29,8 +29,8 @@ build-debug: version proto generate
 	$Q go build -v -ldflags "-X main.AppName=$(REPL_NAME) -X main.BuildVersion=$(VERSION) -X main.BuildSHA=$(GIT_SHA) -X main.BuildDate=$(BUILD_DATE)" -o bin/$(REPL_NAME) -race $(PROJECT)/cmd/$(REPL_NAME)
 
 build-release: version proto generate
-	$Q go build -v -ldflags "-s -w -X main.AppName=$(APP_NAME) -X main.BuildVersion=$(VERSION) -X main.BuildSHA=$(GIT_SHA) -X main.BuildDate=$(BUILD_DATE)" -o bin/$(APP_NAME) $(PROJECT)/cmd/$(APP_NAME)
-	$Q go build -v -ldflags "-s -w -X main.AppName=$(REPL_NAME) -X main.BuildVersion=$(VERSION) -X main.BuildSHA=$(GIT_SHA) -X main.BuildDate=$(BUILD_DATE)" -o bin/$(REPL_NAME) $(PROJECT)/cmd/$(REPL_NAME)
+	$Q GOOS=linux go build -v -ldflags "-s -w -X main.AppName=$(APP_NAME) -X main.BuildVersion=$(VERSION) -X main.BuildSHA=$(GIT_SHA) -X main.BuildDate=$(BUILD_DATE)" -o bin/$(APP_NAME) $(PROJECT)/cmd/$(APP_NAME)
+	$Q GOOS=linux go build -v -ldflags "-s -w -X main.AppName=$(REPL_NAME) -X main.BuildVersion=$(VERSION) -X main.BuildSHA=$(GIT_SHA) -X main.BuildDate=$(BUILD_DATE)" -o bin/$(REPL_NAME) $(PROJECT)/cmd/$(REPL_NAME)
 
 proto: pkg/storage/storage.pb.go  ## Compile the protobuf files
 
@@ -81,7 +81,7 @@ vet:  ## Run the linter
 release-upload: release upload
 
 upload:
-	$Q scp ./bin/discordbot ./config.toml ./eso-have-want-bot.service ./install.sh $(SERVER)
+	$Q scp ./bin/$(REPL_NAME) ./bin/$(APP_NAME) ./bin/$(APP_NAME)-$(VERSION).gz ./config.toml ./eso-have-want-bot.service ./install.sh $(SERVER)
 
 help:  ## Show the help message
 	@awk 'BEGIN {FS = ":.*?## "} /^[a-zA-Z_-]+:.*?## / {printf "\033[36m%-30s\033[0m %s\n", $$1, $$2}' ./Makefile

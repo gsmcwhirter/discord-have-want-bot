@@ -6,6 +6,8 @@ while [ -h "$SOURCE" ]; do # resolve $SOURCE until the file is no longer a symli
   SOURCE="$(readlink "$SOURCE")"
   [[ $SOURCE != /* ]] && SOURCE="$DIR/$SOURCE" # if $SOURCE was a relative symlink, we need to resolve it relative to the path where the symlink file was located
 done
+HERE="$( cd -P "$( dirname "$SOURCE" )" && pwd )"
+echo ${HERE}
 
-cp $(SOURCE)/eso-have-want-bot.service /etc/systemd/system/
+cp ${HERE}/eso-have-want-bot.service /etc/systemd/system/
 systemctl daemon-reload
