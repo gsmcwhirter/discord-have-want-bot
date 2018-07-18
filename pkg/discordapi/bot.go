@@ -85,6 +85,7 @@ func NewDiscordBot(deps dependencies, conf BotConfig) DiscordBot {
 		deps:           deps,
 		commandHandler: commands.CommandHandler(deps, conf.Version, commands.Options{}),
 
+		session:               NewSession(),
 		connectionRateLimiter: rate.NewLimiter(rate.Every(5*time.Second), 1),
 		rateLimiter:           rate.NewLimiter(rate.Every(60*time.Second), 120),
 
