@@ -43,11 +43,11 @@ func (c charCommands) show(user string, args []rune) (string, error) {
 	charDescription := fmt.Sprintf(`__**%s**__
 
   Needed Items:
-%s  
-    %s
+%s
+	%s
 %s
 		
-  Needed Skills
+  Needed Skills:
 %s
 	%s
 %s

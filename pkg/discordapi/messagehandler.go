@@ -290,7 +290,7 @@ func (c *discordMessageHandler) handleMessage(p *etfapi.Payload, req wsclient.WS
 	}
 
 	msg := jsonapi.Message{
-		Content: fmt.Sprintf("%s\n%s", m.AuthorIDString(), respStr),
+		Content: fmt.Sprintf("%s\n\n%s\n", m.AuthorIDString(), respStr),
 	}
 
 	sendResp, body, err := c.bot.SendMessage(req.Ctx, m.ChannelID(), msg)
