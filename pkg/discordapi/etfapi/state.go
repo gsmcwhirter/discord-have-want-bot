@@ -13,6 +13,14 @@ type State struct {
 	privateChannels map[snowflake.Snowflake]Channel
 }
 
+// NewState TODOC
+func NewState() State {
+	return State{
+		guilds:          map[snowflake.Snowflake]Guild{},
+		privateChannels: map[snowflake.Snowflake]Channel{},
+	}
+}
+
 // UpdateFromReady TODOC
 func (s *State) UpdateFromReady(p *Payload) (err error) {
 	var ok bool

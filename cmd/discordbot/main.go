@@ -26,6 +26,8 @@ type config struct {
 	Database     string `toml:"database"`
 	NumWorkers   int    `toml:"num_workers"`
 	ClientURL    string `toml:"client_url"`
+	LogFormat    string `toml:"log_format"`
+	LogLevel     string `toml:"log_level"`
 }
 
 func main() {
@@ -46,6 +48,8 @@ func setup() (conf config, err error) { //nolint: gocyclo
 	tok := cli.Flag("client-token", "The discord bot client token").String()
 	dbFile := cli.Flag("database", "The bolt database file").String()
 	numWorkers := cli.Flag("num-workers", "The number of worker goroutines to run").Int()
+	logFormat := cli.Flag("log-format", "The logger format").String()
+	logLevel := cli.Flag("log-level", "The minimum log level to show").String()
 
 	_, err = cli.Parse(os.Args[1:])
 	if err != nil {
@@ -80,6 +84,14 @@ func setup() (conf config, err error) { //nolint: gocyclo
 
 	if numWorkers != nil && *numWorkers > 0 {
 		conf.NumWorkers = *numWorkers
+	}
+
+	if logFormat != nil && *logFormat != "" {
+		conf.LogFormat = *logFormat
+	}
+
+	if logLevel != nil && *logLevel != "" {
+		conf.LogLevel = *logLevel
 	}
 
 	return

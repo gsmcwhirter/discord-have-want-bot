@@ -1,6 +1,6 @@
-package errors
+package commands
 
-import "errors"
+import "github.com/pkg/errors"
 
 // ErrCharacterNameRequired TODOC
 var ErrCharacterNameRequired = errors.New("character name required")

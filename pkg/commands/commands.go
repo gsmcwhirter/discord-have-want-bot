@@ -1,10 +1,9 @@
 package commands
 
 import (
+	"fmt"
+
 	"github.com/gsmcwhirter/eso-discord/pkg/cmdhandler"
-	"github.com/gsmcwhirter/eso-discord/pkg/commands/char"
-	"github.com/gsmcwhirter/eso-discord/pkg/commands/got"
-	"github.com/gsmcwhirter/eso-discord/pkg/commands/need"
 	"github.com/gsmcwhirter/eso-discord/pkg/parser"
 	"github.com/gsmcwhirter/eso-discord/pkg/storage"
 )
@@ -35,7 +34,7 @@ func CommandHandler(deps dependencies, versionStr string, opts Options) *cmdhand
 			"help",
 			"version",
 			"char",
-			"items",
+			"list",
 			"need",
 			"got",
 		},
@@ -43,11 +42,13 @@ func CommandHandler(deps dependencies, versionStr string, opts Options) *cmdhand
 	rh := rootCommands{
 		versionStr: versionStr,
 	}
-	ch := cmdhandler.NewCommandHandler(p)
+	ciString := string([]rune{opts.CmdIndicator})
+	ch := cmdhandler.NewCommandHandler(p, cmdhandler.Options{})
 	ch.SetHandler("version", cmdhandler.NewLineHandler(rh.version))
-	ch.SetHandler("char", char.CommandHandler(deps))
-	ch.SetHandler("need", need.CommandHandler(deps))
-	ch.SetHandler("got", got.CommandHandler(deps))
+	ch.SetHandler("char", CharCommandHandler(deps, fmt.Sprintf("%schar", ciString)))
+	ch.SetHandler("need", NeedCommandHandler(deps, fmt.Sprintf("%sneed", ciString)))
+	ch.SetHandler("got", GotCommandHandler(deps, fmt.Sprintf("%sgot", ciString)))
+	ch.SetHandler("list", ListCommandHandler(deps, fmt.Sprintf("%slist", ciString)))
 
 	return ch
 }

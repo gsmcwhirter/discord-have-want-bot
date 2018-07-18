@@ -6,6 +6,8 @@ import (
 	"os"
 	"time"
 
+	"github.com/go-kit/kit/log/level"
+
 	bolt "github.com/coreos/bbolt"
 	"github.com/go-kit/kit/log"
 
@@ -25,7 +27,26 @@ type dependencies struct {
 func createDependencies(conf config) (d *dependencies, err error) {
 	d = &dependencies{}
 
-	logger := log.NewLogfmtLogger(log.NewSyncWriter(os.Stdout))
+	var logger log.Logger
+	if conf.LogFormat == "json" {
+		logger = log.NewJSONLogger(log.NewSyncWriter(os.Stdout))
+	} else {
+		logger = log.NewLogfmtLogger(log.NewSyncWriter(os.Stdout))
+	}
+
+	switch conf.LogLevel {
+	case "debug":
+		logger = level.NewFilter(logger, level.AllowDebug())
+	case "info":
+		logger = level.NewFilter(logger, level.AllowInfo())
+	case "warn":
+		logger = level.NewFilter(logger, level.AllowWarn())
+	case "error":
+		logger = level.NewFilter(logger, level.AllowError())
+	default:
+		logger = level.NewFilter(logger, level.AllowAll())
+	}
+
 	logger = log.With(logger, "timestamp", log.DefaultTimestampUTC, "caller", log.DefaultCaller)
 	d.logger = logger
 

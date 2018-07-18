@@ -105,9 +105,12 @@ func (d *discordBot) AuthenticateAndConnect() error {
 		return err
 	}
 
-	_, body, err := d.deps.HTTPClient().GetBody(ctx, fmt.Sprintf("%s/gateway/bot", d.config.APIURL), nil)
+	resp, body, err := d.deps.HTTPClient().GetBody(ctx, fmt.Sprintf("%s/gateway/bot", d.config.APIURL), nil)
 	if err != nil {
 		return err
+	}
+	if resp.StatusCode != http.StatusOK {
+		return errors.Wrap(ErrResponse, "non-200 response")
 	}
 
 	_ = level.Debug(logger).Log(
@@ -180,7 +183,7 @@ func (d *discordBot) SendMessage(ctx context.Context, cid snowflake.Snowflake, m
 		return
 	}
 
-	if resp.StatusCode != 200 {
+	if resp.StatusCode != http.StatusOK {
 		err = errors.Wrap(ErrResponse, "non-200 response")
 	}
 

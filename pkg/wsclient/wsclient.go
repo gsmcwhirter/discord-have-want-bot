@@ -69,12 +69,16 @@ type wsClient struct {
 	conn       *websocket.Conn
 	handler    MessageHandler
 
-	responses chan WSMessage
-	done      chan struct{}
+	responses     chan WSMessage
+	done          chan struct{}
+	stopResponses chan struct{}
 
 	controls   *sync.WaitGroup
-	poolTokens chan struct{}
 	pool       *sync.WaitGroup
+	poolTokens chan struct{}
+
+	closeLock sync.Mutex
+	isClosed  bool
 }
 
 // Options TODOC
@@ -97,6 +101,11 @@ func NewWSClient(deps dependencies, options Options) WSClient {
 		c.dialer = websocket.DefaultDialer
 	}
 
+	c.done = make(chan struct{})
+	c.stopResponses = make(chan struct{})
+
+	c.pool = &sync.WaitGroup{}
+	c.controls = &sync.WaitGroup{}
 	if options.MaxConcurrentHandlers <= 0 {
 		c.poolTokens = make(chan struct{}, 20)
 		c.responses = make(chan WSMessage, 20)
@@ -104,10 +113,6 @@ func NewWSClient(deps dependencies, options Options) WSClient {
 		c.poolTokens = make(chan struct{}, options.MaxConcurrentHandlers)
 		c.responses = make(chan WSMessage, options.MaxConcurrentHandlers)
 	}
-
-	c.done = make(chan struct{})
-	c.pool = &sync.WaitGroup{}
-	c.controls = &sync.WaitGroup{}
 
 	return c
 }
@@ -180,7 +185,7 @@ func (c *wsClient) Close() {
 func (c *wsClient) HandleRequests(interrupt chan os.Signal) {
 	_ = level.Debug(c.deps.Logger()).Log("message", "starting response handler")
 	c.controls.Add(1)
-	go c.handleResponses(interrupt)
+	go c.handleResponses()
 
 	_ = level.Debug(c.deps.Logger()).Log("message", "starting message reader")
 	c.controls.Add(1)
@@ -193,18 +198,20 @@ func (c *wsClient) HandleRequests(interrupt chan os.Signal) {
 }
 
 func (c *wsClient) gracefulClose() {
+	c.closeLock.Lock()
+	defer c.closeLock.Unlock()
+
+	if c.isClosed {
+		return
+	}
+
+	c.isClosed = true
+
 	close(c.done)
 	_ = c.conn.SetReadDeadline(time.Now())
 
 	// Close the socket connection gracefully
-	_ = level.Debug(c.deps.Logger()).Log("message", "gracefully closing the socket")
-	err := c.conn.WriteMessage(websocket.CloseMessage, websocket.FormatCloseMessage(websocket.CloseNormalClosure, ""))
-	if err != nil {
-		_ = level.Error(c.deps.Logger()).Log("message", "Unable to write websocket close message", "error", err)
-		return
-	}
-
-	_ = level.Debug(c.deps.Logger()).Log("message", "close message sent")
+	close(c.stopResponses)
 }
 
 func (c *wsClient) doReads(readerDone chan<- struct{}) {
@@ -295,50 +302,66 @@ func (c *wsClient) handleRequest(req WSMessage) {
 	}
 }
 
-func (c *wsClient) handleResponses(interrupt chan os.Signal) { //nolint: gocyclo
+func (c *wsClient) processResponse(resp WSMessage) {
+	logger := logging.WithContext(resp.Ctx, c.deps.Logger())
+
+	_ = level.Debug(logger).Log(
+		"message", "starting sending message",
+		"ws_msg_type", resp.MessageType,
+		"ws_msg_len", len(resp.MessageContents),
+	)
+
+	start := time.Now()
+	err := c.conn.WriteMessage(int(resp.MessageType), resp.MessageContents)
+
+	_ = level.Debug(logging.WithContext(resp.Ctx, c.deps.Logger())).Log(
+		"message", "done sending message",
+		"elapsed_ns", time.Since(start).Nanoseconds(),
+	)
+
+	if err != nil {
+		_ = level.Error(logger).Log(
+			"message", "error sending message",
+			"error", err,
+		)
+	}
+}
+
+func (c *wsClient) handleResponses() { //nolint: gocyclo
 	defer c.controls.Done()
 	defer level.Info(c.deps.Logger()).Log("message", "handleResponses shutdown complete") //nolint: errcheck
 
 	for {
 		select {
-		case sig := <-interrupt: // time to stop
+		case <-c.stopResponses: // time to stop
 			_ = level.Info(c.deps.Logger()).Log("message", "handleResponses received interrupt -- shutting down")
-			interrupt <- sig // allows other things to respond also
+
+			defer func() {
+				_ = level.Debug(c.deps.Logger()).Log("message", "gracefully closing the socket")
+				err := c.conn.WriteMessage(websocket.CloseMessage, websocket.FormatCloseMessage(websocket.CloseNormalClosure, ""))
+				if err != nil {
+					_ = level.Error(c.deps.Logger()).Log("message", "Unable to write websocket close message", "error", err)
+					return
+				}
+				_ = level.Debug(c.deps.Logger()).Log("message", "close message sent")
+			}()
 
 			// drain the remaining response queue
 			for {
 				select {
-				case _, ok := <-c.responses:
+				case resp, ok := <-c.responses:
 					if !ok {
 						close(c.responses)
 						return
 					}
+					c.processResponse(resp)
 				case <-time.After(5 * time.Second):
 					return
 				}
 			}
 
 		case resp := <-c.responses: // handle pending responses
-			_ = level.Debug(logging.WithContext(resp.Ctx, c.deps.Logger())).Log(
-				"message", "starting sending message",
-				"ws_msg_type", resp.MessageType,
-				"ws_msg_len", len(resp.MessageContents),
-			)
-
-			start := time.Now()
-			err := c.conn.WriteMessage(int(resp.MessageType), resp.MessageContents)
-
-			_ = level.Debug(logging.WithContext(resp.Ctx, c.deps.Logger())).Log(
-				"message", "done sending message",
-				"elapsed_ns", time.Since(start).Nanoseconds(),
-			)
-
-			if err != nil {
-				_ = level.Error(logging.WithContext(resp.Ctx, c.deps.Logger())).Log(
-					"message", "error sending message",
-					"error", err,
-				)
-			}
+			c.processResponse(resp)
 		}
 	}
 }

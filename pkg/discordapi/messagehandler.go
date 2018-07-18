@@ -296,7 +296,10 @@ func (c *discordMessageHandler) handleMessage(p *etfapi.Payload, req wsclient.WS
 	sendResp, body, err := c.bot.SendMessage(req.Ctx, m.ChannelID(), msg)
 	if err != nil {
 		_ = level.Error(logger).Log("message", "could not send message", "err", err, "resp_body", string(body), "status_code", sendResp.StatusCode)
+		return
 	}
+
+	_ = level.Info(logger).Log("message", "successfully sent message to channel", "channel_id", m.ChannelID().ToString())
 
 	return
 }

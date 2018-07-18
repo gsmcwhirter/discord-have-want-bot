@@ -14,6 +14,13 @@ type Session struct {
 	state     etfapi.State
 }
 
+// NewSession TODOC
+func NewSession() Session {
+	return Session{
+		state: etfapi.NewState(),
+	}
+}
+
 // ID TODOC
 func (s *Session) ID() string {
 	s.lock.RLock()

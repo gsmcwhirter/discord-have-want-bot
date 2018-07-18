@@ -1,4 +1,4 @@
-package got
+package commands
 
 import (
 	"fmt"
@@ -8,28 +8,23 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/gsmcwhirter/eso-discord/pkg/cmdhandler"
-	cmderrors "github.com/gsmcwhirter/eso-discord/pkg/commands/errors"
 	"github.com/gsmcwhirter/eso-discord/pkg/parser"
 	"github.com/gsmcwhirter/eso-discord/pkg/storage"
 	"github.com/gsmcwhirter/eso-discord/pkg/util"
 )
 
-type dependencies interface {
-	UserAPI() storage.UserAPI
-}
-
-type charItemHandler struct {
+type gotItemHandler struct {
 	user     storage.User
 	charName string
 }
 
-func (h charItemHandler) HandleLine(user string, args []rune) (string, error) {
+func (h gotItemHandler) HandleLine(user string, args []rune) (string, error) {
 	args, ctRunes := parser.MaybeCount(args)
 
 	itemName := strings.TrimSpace(string(args))
 
 	if len(itemName) == 0 {
-		return "", cmderrors.ErrItemNameRequired
+		return "", ErrItemNameRequired
 	}
 
 	ctStr := strings.TrimSpace(string(ctRunes))
@@ -43,7 +38,7 @@ func (h charItemHandler) HandleLine(user string, args []rune) (string, error) {
 	}
 
 	if ct < 0 {
-		return "", cmderrors.ErrPositiveValueRequired
+		return "", ErrPositiveValueRequired
 	}
 
 	char, err := h.user.GetCharacter(h.charName)
@@ -56,18 +51,18 @@ func (h charItemHandler) HandleLine(user string, args []rune) (string, error) {
 	return fmt.Sprintf("marked %s as needing -%d of %s", h.charName, ct, itemName), nil
 }
 
-type charPointsHandler struct {
+type gotPointsHandler struct {
 	user     storage.User
 	charName string
 }
 
-func (h charPointsHandler) HandleLine(user string, args []rune) (string, error) {
+func (h gotPointsHandler) HandleLine(user string, args []rune) (string, error) {
 	args, ctRunes := parser.MaybeCount(args)
 
 	skillName := strings.TrimSpace(string(args))
 
 	if len(skillName) == 0 {
-		return "", cmderrors.ErrSkillNameRequired
+		return "", ErrSkillNameRequired
 	}
 
 	ctStr := strings.TrimSpace(string(ctRunes))
@@ -81,7 +76,7 @@ func (h charPointsHandler) HandleLine(user string, args []rune) (string, error) 
 	}
 
 	if ct < 0 {
-		return "", cmderrors.ErrPositiveValueRequired
+		return "", ErrPositiveValueRequired
 	}
 
 	char, err := h.user.GetCharacter(h.charName)
@@ -95,7 +90,52 @@ func (h charPointsHandler) HandleLine(user string, args []rune) (string, error) 
 }
 
 type gotCommands struct {
-	deps dependencies
+	preCommand string
+	deps       dependencies
+}
+
+func (c gotCommands) helpCharsPoints(user string, args []rune) (string, error) {
+	helpStr := fmt.Sprintf("Usage: %s [%s] [skill name] [count?]\n\n", c.preCommand+" pts", "charname")
+	helpStr += fmt.Sprintf("Available %ss:\n", "charnames")
+
+	t, err := c.deps.UserAPI().NewTransaction(false)
+	if err != nil {
+		return helpStr, nil
+	}
+	defer util.CheckDefer(t.Rollback)
+
+	bUser, err := t.GetUser(user)
+	if err != nil {
+		return helpStr, nil
+	}
+
+	for _, char := range bUser.GetCharacters() {
+		helpStr += fmt.Sprintf("  %s\n", char.GetName())
+	}
+
+	return helpStr, nil
+}
+
+func (c gotCommands) helpCharsItems(user string, args []rune) (string, error) {
+	helpStr := fmt.Sprintf("Usage: %s [%s] [item name] [count?]\n\n", c.preCommand+" pts", "charname")
+	helpStr += fmt.Sprintf("Available %ss:\n", "charnames")
+
+	t, err := c.deps.UserAPI().NewTransaction(false)
+	if err != nil {
+		return helpStr, nil
+	}
+	defer util.CheckDefer(t.Rollback)
+
+	bUser, err := t.GetUser(user)
+	if err != nil {
+		return helpStr, nil
+	}
+
+	for _, char := range bUser.GetCharacters() {
+		helpStr += fmt.Sprintf("  %s\n", char.GetName())
+	}
+
+	return helpStr, nil
 }
 
 func (c gotCommands) points(user string, args []rune) (string, error) {
@@ -121,11 +161,15 @@ func (c gotCommands) points(user string, args []rune) (string, error) {
 
 	p := parser.NewParser(parser.Options{
 		CmdIndicator:  ' ',
-		KnownCommands: charNames,
+		KnownCommands: append(charNames, ""),
 	})
-	ch := cmdhandler.NewCommandHandler(p)
+	ch := cmdhandler.NewCommandHandler(p, cmdhandler.Options{
+		PreCommand:  c.preCommand + " pts",
+		Placeholder: "charname",
+	})
+	ch.SetHandler("", cmdhandler.NewLineHandler(c.helpCharsPoints))
 	for _, char := range characters {
-		ch.SetHandler(char.GetName(), charPointsHandler{charName: char.GetName(), user: bUser})
+		ch.SetHandler(char.GetName(), gotPointsHandler{charName: char.GetName(), user: bUser})
 	}
 	retStr, err := ch.HandleLine(user, args)
 
@@ -169,11 +213,15 @@ func (c gotCommands) item(user string, args []rune) (string, error) {
 
 	p := parser.NewParser(parser.Options{
 		CmdIndicator:  ' ',
-		KnownCommands: charNames,
+		KnownCommands: append(charNames, ""),
 	})
-	ch := cmdhandler.NewCommandHandler(p)
+	ch := cmdhandler.NewCommandHandler(p, cmdhandler.Options{
+		PreCommand:  c.preCommand + " item",
+		Placeholder: "charname",
+	})
+	ch.SetHandler("", cmdhandler.NewLineHandler(c.helpCharsItems))
 	for _, char := range characters {
-		ch.SetHandler(char.GetName(), charItemHandler{charName: char.GetName(), user: bUser})
+		ch.SetHandler(char.GetName(), gotItemHandler{charName: char.GetName(), user: bUser})
 	}
 	retStr, err := ch.HandleLine(user, args)
 
@@ -194,8 +242,8 @@ func (c gotCommands) item(user string, args []rune) (string, error) {
 	return retStr, nil
 }
 
-// CommandHandler TODOC
-func CommandHandler(deps dependencies) *cmdhandler.CommandHandler {
+// GotCommandHandler TODOC
+func GotCommandHandler(deps dependencies, preCommand string) *cmdhandler.CommandHandler {
 	p := parser.NewParser(parser.Options{
 		CmdIndicator: ' ',
 		KnownCommands: []string{
@@ -205,9 +253,13 @@ func CommandHandler(deps dependencies) *cmdhandler.CommandHandler {
 		},
 	})
 	gc := gotCommands{
-		deps: deps,
+		preCommand: preCommand,
+		deps:       deps,
 	}
-	ch := cmdhandler.NewCommandHandler(p)
+	ch := cmdhandler.NewCommandHandler(p, cmdhandler.Options{
+		PreCommand:  preCommand,
+		Placeholder: "type",
+	})
 	ch.SetHandler("pts", cmdhandler.NewLineHandler(gc.points))
 	ch.SetHandler("item", cmdhandler.NewLineHandler(gc.item))
 
