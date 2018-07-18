@@ -91,15 +91,16 @@ func (ch *CommandHandler) HandleLine(user string, line []rune) (string, error) {
 	}
 
 	if err == parser.ErrUnknownCommand {
-		cmd2, rest, err := ch.parser.ParseCommand(ch.helpCmd)
+		var cmd2 string
+		cmd2, rest, err = ch.parser.ParseCommand(ch.helpCmd)
 
-		subHandler, cmdExists := ch.commands[cmd2]
+		subHandler, cmdExists = ch.commands[cmd2]
 		if !cmdExists {
 			return "", ErrMissingHandler
 		}
 
 		if err != nil {
-			return fmt.Sprintf("Unknown command '%s'", cmd2), err
+			return fmt.Sprintf("Unknown command '%s'", cmd), err
 		}
 
 		return subHandler.HandleLine(user, rest)
