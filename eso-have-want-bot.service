@@ -14,7 +14,6 @@ ExecStart=/home/discordbot/eso-discord/discordbot \
             --config /home/discordbot/eso-discord/config.toml \
             --database /home/discordbot/eso-discord/discordbot.db \
             --num-workers 20 \
-            --log-format json \
             --log-level info
 
 KillMode=mixed

@@ -66,7 +66,7 @@ func (c *discordMessageHandler) HandleRequest(req wsclient.WSMessage, resp chan<
 
 	p, err := etfapi.Unmarshal(req.MessageContents)
 	if err != nil {
-		_ = level.Error(logger).Log("message", "error unmarshaling payload", "error", err)
+		_ = level.Error(logger).Log("message", "error unmarshaling payload", "error", err, "ws_msg", fmt.Sprintf("%v", req.MessageContents))
 		return
 	}
 
@@ -74,7 +74,7 @@ func (c *discordMessageHandler) HandleRequest(req wsclient.WSMessage, resp chan<
 		c.bot.UpdateSequence(*p.SeqNum)
 	}
 
-	_ = level.Debug(logger).Log("message", "received payload", "payload", p)
+	_ = level.Info(logger).Log("message", "received payload", "payload", p)
 
 	opHandler, ok := c.opCodeDispatch[p.OpCode]
 	if !ok {
@@ -134,6 +134,7 @@ func (c *discordMessageHandler) handleHello(p *etfapi.Payload, req wsclient.WSMe
 
 	sessID := c.bot.session.ID()
 	if sessID != "" {
+		_ = level.Info(logger).Log("message", "generating resume payload")
 		rp := payloads.ResumePayload{
 			Token:     c.bot.config.BotToken,
 			SessionID: sessID,
@@ -142,6 +143,7 @@ func (c *discordMessageHandler) handleHello(p *etfapi.Payload, req wsclient.WSMe
 
 		m, err = payloads.ETFPayloadToMessage(req.Ctx, rp)
 	} else {
+		_ = level.Info(logger).Log("message", "generating identify payload")
 		ip := payloads.IdentifyPayload{
 			Token: c.bot.config.BotToken,
 			Properties: payloads.IdentifyPayloadProperties{
@@ -169,7 +171,7 @@ func (c *discordMessageHandler) handleHello(p *etfapi.Payload, req wsclient.WSMe
 	}
 
 	if err != nil {
-		_ = level.Error(logger).Log("message", "error generating identify payload", "err", err)
+		_ = level.Error(logger).Log("message", "error generating identify/resume payload", "err", err)
 		return
 	}
 
@@ -179,6 +181,7 @@ func (c *discordMessageHandler) handleHello(p *etfapi.Payload, req wsclient.WSMe
 		return
 	}
 
+	_ = level.Info(logger).Log("message", "sending identify/resume to channel")
 	_ = level.Debug(logger).Log("message", "sending response to channel", "message", m, "msg_len", len(m.MessageContents))
 	resp <- m
 }
@@ -208,7 +211,7 @@ func (c *discordMessageHandler) handleDispatch(p *etfapi.Payload, req wsclient.W
 	logger := logging.WithContext(req.Ctx, c.bot.deps.Logger())
 	eventHandler, ok := c.eventDispatch[p.EventName]
 	if ok {
-		_ = level.Debug(logger).Log("message", "processing event", "event_name", p.EventName)
+		_ = level.Info(logger).Log("message", "processing event", "event_name", p.EventName)
 		eventHandler(p, req, resp, done)
 	}
 }
@@ -276,6 +279,8 @@ func (c *discordMessageHandler) handleMessage(p *etfapi.Payload, req wsclient.WS
 		return
 	}
 
+	_ = level.Info(logger).Log("message", "attempting to handle command")
+
 	content[0] = c.bot.commandHandler.CommandIndicator()
 	respStr, err := c.bot.commandHandler.HandleLine(m.AuthorIDString(), content)
 	if err != nil {
@@ -285,7 +290,7 @@ func (c *discordMessageHandler) handleMessage(p *etfapi.Payload, req wsclient.WS
 
 	err = c.bot.rateLimiter.Wait(req.Ctx)
 	if err != nil {
-		_ = level.Error(logger).Log("message", "error generating identify payload", "err", err)
+		_ = level.Error(logger).Log("message", "error waiting for ratelimiting", "err", err)
 		return
 	}
 

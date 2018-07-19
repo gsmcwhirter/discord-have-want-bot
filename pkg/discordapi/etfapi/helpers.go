@@ -352,7 +352,7 @@ func ElementMapToElementSlice(m map[string]Element) ([]Element, error) {
 func MapAndIDFromElement(e Element) (eMap map[string]Element, id snowflake.Snowflake, err error) {
 	eMap, err = e.ToMap()
 	if err != nil {
-		err = errors.Wrap(err, "could not inflate element to map")
+		err = errors.Wrap(err, fmt.Sprintf("could not inflate element to map: %v", e))
 		return
 	}
 

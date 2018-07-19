@@ -154,6 +154,8 @@ func (c *wsClient) Connect(token string) (err error) {
 	}
 	defer dialResp.Body.Close() // nolint: errcheck
 
+	_ = level.Info(logger).Log("message", "ws connected")
+
 	return
 }
 
@@ -237,7 +239,7 @@ func (c *wsClient) doReads(readerDone chan<- struct{}) {
 		copy(mC, msg)
 
 		wsMsg := WSMessage{Ctx: ctx, MessageType: mT, MessageContents: mC}
-		_ = level.Debug(logging.WithContext(ctx, c.deps.Logger())).Log(
+		_ = level.Info(logging.WithContext(ctx, c.deps.Logger())).Log(
 			"message", "received message",
 			"ws_msg_type", mT,
 			"ws_msg_len", len(mC),
@@ -247,7 +249,7 @@ func (c *wsClient) doReads(readerDone chan<- struct{}) {
 			"message", "waiting for worker token",
 		)
 		c.poolTokens <- struct{}{}
-		_ = level.Debug(logging.WithContext(ctx, c.deps.Logger())).Log(
+		_ = level.Info(logging.WithContext(ctx, c.deps.Logger())).Log(
 			"message", "worker token acquired",
 		)
 		c.pool.Add(1)
@@ -289,7 +291,7 @@ func (c *wsClient) handleRequest(req WSMessage) {
 
 	defer func() {
 		<-c.poolTokens
-		_ = level.Debug(logger).Log("message", "released worker token")
+		_ = level.Info(logger).Log("message", "released worker token")
 	}()
 
 	select {
@@ -314,7 +316,7 @@ func (c *wsClient) processResponse(resp WSMessage) {
 	start := time.Now()
 	err := c.conn.WriteMessage(int(resp.MessageType), resp.MessageContents)
 
-	_ = level.Debug(logging.WithContext(resp.Ctx, c.deps.Logger())).Log(
+	_ = level.Info(logging.WithContext(resp.Ctx, c.deps.Logger())).Log(
 		"message", "done sending message",
 		"elapsed_ns", time.Since(start).Nanoseconds(),
 	)
@@ -343,7 +345,7 @@ func (c *wsClient) handleResponses() { //nolint: gocyclo
 					_ = level.Error(c.deps.Logger()).Log("message", "Unable to write websocket close message", "error", err)
 					return
 				}
-				_ = level.Debug(c.deps.Logger()).Log("message", "close message sent")
+				_ = level.Info(c.deps.Logger()).Log("message", "close message sent")
 			}()
 
 			// drain the remaining response queue

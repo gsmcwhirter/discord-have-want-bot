@@ -86,7 +86,7 @@ func (h gotPointsHandler) HandleLine(user string, args []rune) (string, error) {
 
 	char.DecrNeededSkill(skillName, uint64(ct))
 
-	return fmt.Sprintf("marked %s as needing +%d points in %s", h.charName, ct, skillName), nil
+	return fmt.Sprintf("marked %s as needing -%d points in %s", h.charName, ct, skillName), nil
 }
 
 type gotCommands struct {

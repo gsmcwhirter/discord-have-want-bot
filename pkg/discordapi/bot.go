@@ -130,6 +130,8 @@ func (d *discordBot) AuthenticateAndConnect() error {
 		"gateway_shards", respData.Shards,
 	)
 
+	_ = level.Info(logger).Log("message", "acquired gateway url")
+
 	d.messageHandler = newDiscordMessageHandler(d, d.heartbeats)
 
 	connectURL, err := url.Parse(respData.URL)
@@ -165,6 +167,10 @@ func (d *discordBot) AuthenticateAndConnect() error {
 }
 
 func (d *discordBot) SendMessage(ctx context.Context, cid snowflake.Snowflake, m jsonapi.Message) (resp *http.Response, body []byte, err error) {
+	logger := logging.WithContext(ctx, d.deps.Logger())
+
+	_ = level.Info(logger).Log("message", "sending message to channel")
+
 	b, err := m.MarshalJSON()
 	if err != nil {
 		return
