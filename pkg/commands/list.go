@@ -2,6 +2,7 @@ package commands
 
 import (
 	"fmt"
+	"sort"
 	"strings"
 
 	"github.com/pkg/errors"
@@ -46,8 +47,15 @@ func (c listCommands) items(user string, args []rune) (string, error) {
 		}
 	}
 
+	itemNames := make([]string, 0, len(itemCounts))
+	for itemName := range itemCounts {
+		itemNames = append(itemNames, itemName)
+	}
+	sort.Strings(itemNames)
+
 	itemDescrip := "__**All needed items:**__\n```\n"
-	for itemName, ct := range itemCounts {
+	for _, itemName := range itemNames {
+		ct := itemCounts[itemName]
 		itemDescrip += fmt.Sprintf("  %s x%d\n", itemName, ct)
 	}
 	itemDescrip += "```\n"
@@ -84,8 +92,16 @@ func (c listCommands) points(user string, args []rune) (string, error) {
 		}
 	}
 
+	skillNames := make([]string, 0, len(skillCounts))
+	for k := range skillCounts {
+		skillNames = append(skillNames, k)
+	}
+
+	sort.Strings(skillNames)
+
 	skillDescrip := "__**All needed skills:**__\n```\n"
-	for skillName, ct := range skillCounts {
+	for _, skillName := range skillNames {
+		ct := skillCounts[skillName]
 		skillDescrip += fmt.Sprintf("  %s x%d\n", skillName, ct)
 	}
 	skillDescrip += "```\n"

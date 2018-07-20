@@ -2,6 +2,7 @@ package commands
 
 import (
 	"fmt"
+	"sort"
 	"strconv"
 	"strings"
 
@@ -96,7 +97,7 @@ type gotCommands struct {
 
 func (c gotCommands) helpCharsPoints(user string, args []rune) (string, error) {
 	helpStr := fmt.Sprintf("Usage: %s [%s] [skill name] [count?]\n\n", c.preCommand+" pts", "charname")
-	helpStr += fmt.Sprintf("Available %ss:\n", "charnames")
+	helpStr += fmt.Sprintf("Available %ss:\n", "charname")
 
 	t, err := c.deps.UserAPI().NewTransaction(false)
 	if err != nil {
@@ -109,16 +110,22 @@ func (c gotCommands) helpCharsPoints(user string, args []rune) (string, error) {
 		return helpStr, nil
 	}
 
-	for _, char := range bUser.GetCharacters() {
-		helpStr += fmt.Sprintf("  %s\n", char.GetName())
+	characters := bUser.GetCharacters()
+	charNames := make([]string, 0, len(characters))
+
+	for _, char := range characters {
+		charNames = append(charNames, char.GetName())
 	}
+
+	sort.Strings(charNames)
+	helpStr += fmt.Sprintf("  %s", strings.Join(charNames, "\n  "))
 
 	return helpStr, nil
 }
 
 func (c gotCommands) helpCharsItems(user string, args []rune) (string, error) {
 	helpStr := fmt.Sprintf("Usage: %s [%s] [item name] [count?]\n\n", c.preCommand+" pts", "charname")
-	helpStr += fmt.Sprintf("Available %ss:\n", "charnames")
+	helpStr += fmt.Sprintf("Available %ss:\n", "charname")
 
 	t, err := c.deps.UserAPI().NewTransaction(false)
 	if err != nil {
@@ -131,9 +138,15 @@ func (c gotCommands) helpCharsItems(user string, args []rune) (string, error) {
 		return helpStr, nil
 	}
 
-	for _, char := range bUser.GetCharacters() {
-		helpStr += fmt.Sprintf("  %s\n", char.GetName())
+	characters := bUser.GetCharacters()
+	charNames := make([]string, 0, len(characters))
+
+	for _, char := range characters {
+		charNames = append(charNames, char.GetName())
 	}
+
+	sort.Strings(charNames)
+	helpStr += fmt.Sprintf("  %s", strings.Join(charNames, "\n  "))
 
 	return helpStr, nil
 }

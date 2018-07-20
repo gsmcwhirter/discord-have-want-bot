@@ -2,6 +2,7 @@ package commands
 
 import (
 	"fmt"
+	"sort"
 	"strings"
 
 	"github.com/pkg/errors"
@@ -11,6 +12,8 @@ import (
 	"github.com/gsmcwhirter/eso-discord/pkg/storage"
 	"github.com/gsmcwhirter/eso-discord/pkg/util"
 )
+
+const triplet = "```"
 
 type charCommands struct {
 	preCommand string
@@ -51,7 +54,7 @@ func (c charCommands) show(user string, args []rune) (string, error) {
 %s
 	%s
 %s
-`, char.GetName(), "```", itemsDescription(char, "    "), "```", "```", skillsDescription(char, "    "), "```")
+`, char.GetName(), triplet, itemsDescription(char, "    "), triplet, triplet, skillsDescription(char, "    "), triplet)
 
 	return charDescription, nil
 }
@@ -153,9 +156,15 @@ func (c charCommands) list(user string, args []rune) (string, error) {
 	}
 
 	chars := bUser.GetCharacters()
-	charList := "__**Your characters:**__\n```\n"
+	charNames := make([]string, 0, len(chars))
 	for _, char := range chars {
-		charList += fmt.Sprintf("  %s\n", char.GetName())
+		charNames = append(charNames, char.GetName())
+	}
+	sort.Strings(charNames)
+
+	charList := "__**Your characters:**__\n```\n"
+	for _, charName := range charNames {
+		charList += fmt.Sprintf("  %s\n", charName)
 	}
 	charList += "```\n"
 	return charList, nil

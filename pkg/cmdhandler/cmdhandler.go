@@ -2,6 +2,7 @@ package cmdhandler
 
 import (
 	"fmt"
+	"sort"
 
 	"github.com/pkg/errors"
 
@@ -65,11 +66,17 @@ func (ch *CommandHandler) showHelp(user string, line []rune) (string, error) {
 	if ch.preCommand != "" {
 		helpStr = fmt.Sprintf("Usage: %s [%s]\n\n", ch.preCommand, ch.placeholder)
 	}
-	leadChar := string(ch.parser.LeadChar())
+
 	helpStr += fmt.Sprintf("Available %ss:\n", ch.placeholder)
+	cNames := make([]string, 0, len(ch.commands))
 	for cmd := range ch.commands {
+		cNames = append(cNames, cmd)
+	}
+	sort.Strings(cNames)
+
+	for _, cmd := range cNames {
 		if cmd != "" {
-			helpStr += fmt.Sprintf("  %s%s\n", leadChar, cmd)
+			helpStr += fmt.Sprintf("  %s\n", cmd)
 		}
 	}
 	return helpStr, nil
