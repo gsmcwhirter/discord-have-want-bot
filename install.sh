@@ -12,6 +12,6 @@ echo ${HERE}
 systemctl stop eso-have-want-bot
 cp ${HERE}/eso-have-want-bot.service /etc/systemd/system/
 systemctl daemon-reload
-rm ${HERE}/discordbot
-gunzip ${HERE}/discordbot.gz
+rm ${HERE}/have-want-bot
+gunzip ${HERE}/have-want-bot.gz
 systemctl start eso-have-want-bot

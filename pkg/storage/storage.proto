@@ -21,3 +21,8 @@ message ProtoUser {
     string name = 1;
     map<string, ProtoCharacter> characters = 2;
 }
+
+message ProtoGuild {
+    string name = 1;
+    string command_indicator = 2;
+}

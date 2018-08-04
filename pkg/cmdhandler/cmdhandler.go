@@ -22,7 +22,7 @@ type Options struct {
 type CommandHandler struct {
 	parser      parser.Parser
 	commands    map[string]LineHandler
-	helpCmd     []rune
+	helpCmd     string
 	placeholder string
 	preCommand  string
 }
@@ -47,7 +47,7 @@ func NewCommandHandler(parser parser.Parser, opts Options) *CommandHandler {
 }
 
 // CommandIndicator TODOC
-func (ch *CommandHandler) CommandIndicator() rune {
+func (ch *CommandHandler) CommandIndicator() string {
 	return ch.parser.LeadChar()
 }
 
@@ -55,13 +55,16 @@ func (ch *CommandHandler) CommandIndicator() rune {
 func (ch *CommandHandler) SetParser(p parser.Parser) {
 	ch.parser = p
 	ch.calculateHelpCmd()
+	for cmd := range ch.commands {
+		ch.parser.LearnCommand(cmd)
+	}
 }
 
 func (ch *CommandHandler) calculateHelpCmd() {
-	ch.helpCmd = append([]rune{ch.parser.LeadChar()}, []rune("help")...)
+	ch.helpCmd = ch.parser.LeadChar() + "help"
 }
 
-func (ch *CommandHandler) showHelp(user string, line []rune) (string, error) {
+func (ch *CommandHandler) showHelp(user, guild string, line string) (string, error) {
 	var helpStr string
 	if ch.preCommand != "" {
 		helpStr = fmt.Sprintf("Usage: %s [%s]\n\n", ch.preCommand, ch.placeholder)
@@ -84,11 +87,12 @@ func (ch *CommandHandler) showHelp(user string, line []rune) (string, error) {
 
 // SetHandler TODOC
 func (ch *CommandHandler) SetHandler(cmd string, handler LineHandler) {
+	ch.parser.LearnCommand(cmd)
 	ch.commands[cmd] = handler
 }
 
 // HandleLine TODOC
-func (ch *CommandHandler) HandleLine(user string, line []rune) (string, error) {
+func (ch *CommandHandler) HandleLine(user, guild string, line string) (string, error) {
 	cmd, rest, err := ch.parser.ParseCommand(line)
 
 	subHandler, cmdExists := ch.commands[cmd]
@@ -110,7 +114,7 @@ func (ch *CommandHandler) HandleLine(user string, line []rune) (string, error) {
 			return fmt.Sprintf("Unknown command '%s'", cmd), err
 		}
 
-		return subHandler.HandleLine(user, rest)
+		return subHandler.HandleLine(user, guild, rest)
 
 	}
 
@@ -122,5 +126,5 @@ func (ch *CommandHandler) HandleLine(user string, line []rune) (string, error) {
 		return "", ErrMissingHandler
 	}
 
-	return subHandler.HandleLine(user, rest)
+	return subHandler.HandleLine(user, guild, rest)
 }

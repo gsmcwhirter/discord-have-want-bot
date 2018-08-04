@@ -3,6 +3,8 @@ package main
 import (
 	"fmt"
 	"os"
+
+	_ "net/http/pprof"
 )
 
 // build time variables
@@ -23,7 +25,6 @@ func main() {
 }
 
 func run() (int, error) {
-
 	cli := setup(start)
 	err := cli.Execute()
 	if err != nil {

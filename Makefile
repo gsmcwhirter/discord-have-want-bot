@@ -1,7 +1,7 @@
 BUILD_DATE := `date -u +%Y%m%d`
 VERSION ?= $(shell git describe --tags --always --dirty 2>/dev/null || echo v0.0.1)
 GIT_SHA := $(shell git rev-parse HEAD)
-APP_NAME := discordbot
+APP_NAME := have-want-bot
 REPL_NAME := botrepl
 PROJECT := github.com/gsmcwhirter/eso-discord
 SERVER := discordbot@evogames.org:~/eso-discord/

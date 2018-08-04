@@ -1,6 +1,8 @@
 package storage
 
-import "errors"
+import (
+	"errors"
+)
 
 // ErrSkillNotExist TODOC
 var ErrSkillNotExist = errors.New("skill does not exist")

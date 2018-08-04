@@ -1,12 +1,16 @@
 package parser
 
-import "errors"
+import (
+	"errors"
+	"strings"
+)
 
 // Parser TODOC
 type Parser interface {
-	ParseCommand(line []rune) (cmd string, rest []rune, err error)
+	ParseCommand(line string) (cmd string, rest string, err error)
 	KnownCommand(cmd string) bool
-	LeadChar() rune
+	LearnCommand(cmd string)
+	LeadChar() string
 }
 
 // ErrNotACommand TODOC
@@ -16,13 +20,13 @@ var ErrNotACommand = errors.New("not a command")
 var ErrUnknownCommand = errors.New("unknown command")
 
 type parser struct {
-	CmdIndicator  rune
+	CmdIndicator  string
 	knownCommands map[string]bool
 }
 
 // Options TODOC
 type Options struct {
-	CmdIndicator  rune
+	CmdIndicator  string
 	KnownCommands []string
 }
 
@@ -36,22 +40,26 @@ func NewParser(opts Options) Parser {
 	for _, cmd := range opts.KnownCommands {
 		p.knownCommands[cmd] = true
 	}
-	return p
+	return &p
 }
 
 // KnownCommand TODOC
-func (p parser) KnownCommand(cmd string) bool {
+func (p *parser) KnownCommand(cmd string) bool {
 	return p.knownCommands[cmd]
 }
 
+func (p *parser) LearnCommand(cmd string) {
+	p.knownCommands[cmd] = true
+}
+
 // LeadChar returns the character that identifies commands
-func (p parser) LeadChar() rune {
+func (p *parser) LeadChar() string {
 	return p.CmdIndicator
 }
 
-func (p parser) ParseCommand(line []rune) (cmd string, rest []rune, err error) {
+func (p *parser) ParseCommand(line string) (cmd string, rest string, err error) {
 	if len(line) == 0 {
-		if p.CmdIndicator == ' ' && p.KnownCommand("") {
+		if p.CmdIndicator == "" && p.KnownCommand("") {
 			return "", line, nil
 		}
 
@@ -59,7 +67,7 @@ func (p parser) ParseCommand(line []rune) (cmd string, rest []rune, err error) {
 		return
 	}
 
-	if line[0] != p.CmdIndicator {
+	if !strings.HasPrefix(line, p.CmdIndicator) {
 		err = ErrNotACommand
 		return
 	}
@@ -70,7 +78,7 @@ func (p parser) ParseCommand(line []rune) (cmd string, rest []rune, err error) {
 		}
 
 		if line[i] == ' ' {
-			cmd = string(line[1:i])
+			cmd = line[1:i]
 			rest = line[i:]
 
 			if known := p.knownCommands[cmd]; known {
@@ -79,7 +87,7 @@ func (p parser) ParseCommand(line []rune) (cmd string, rest []rune, err error) {
 		}
 	}
 
-	cmd = string(line[1:])
+	cmd = line[1:]
 	rest = line[0:0]
 	if known := p.knownCommands[cmd]; !known {
 		err = ErrUnknownCommand
@@ -87,7 +95,7 @@ func (p parser) ParseCommand(line []rune) (cmd string, rest []rune, err error) {
 	return
 }
 
-var digits = map[rune]bool{
+var digits = map[byte]bool{
 	'0': true,
 	'1': true,
 	'2': true,
@@ -101,7 +109,7 @@ var digits = map[rune]bool{
 }
 
 // MaybeCount TODOC
-func MaybeCount(line []rune) (l []rune, c []rune) {
+func MaybeCount(line string) (l string, c string) {
 	l = line
 
 	for i := len(line) - 1; i >= 0; i-- {
