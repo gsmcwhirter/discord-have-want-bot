@@ -97,7 +97,6 @@ func (ch *CommandHandler) HandleLine(user, guild string, line string) (string, e
 
 	subHandler, cmdExists := ch.commands[cmd]
 	if err == parser.ErrNotACommand && cmd != "" && !cmdExists {
-		fmt.Println(cmd)
 		return "", err
 	}
 
@@ -114,8 +113,11 @@ func (ch *CommandHandler) HandleLine(user, guild string, line string) (string, e
 			return fmt.Sprintf("Unknown command '%s'", cmd), err
 		}
 
-		return subHandler.HandleLine(user, guild, rest)
-
+		s, sherr := subHandler.HandleLine(user, guild, rest)
+		if sherr == nil {
+			sherr = parser.ErrUnknownCommand
+		}
+		return s, sherr
 	}
 
 	if err != nil && err != parser.ErrNotACommand {

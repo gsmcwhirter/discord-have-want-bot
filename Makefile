@@ -47,9 +47,9 @@ build-release-bundles: build-release
 clean:  ## Remove compiled artifacts
 	$Q rm bin/*
 
-debug: vet build-debug  ## Debug build: create a dev build (enable race detection, don't strip symbols)
+debug: proto generate vet build-debug  ## Debug build: create a dev build (enable race detection, don't strip symbols)
 
-release: vet test build-release-bundles  ## Release build: create a release build (disable race detection, strip symbols)
+release: proto generate test build-release-bundles  ## Release build: create a release build (disable race detection, strip symbols)
 
 deps:  ## Download dependencies
 	$Q # for development and linting

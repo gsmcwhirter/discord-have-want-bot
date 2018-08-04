@@ -1,4 +1,4 @@
 # TODO
 
-- Per-guild customizable prefixes
+- Figure out guild_create race issue(?)
 - Better restart/error-recovery

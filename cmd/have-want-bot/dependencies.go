@@ -83,8 +83,8 @@ func createDependencies(conf config) (d *dependencies, err error) {
 
 	d.wsClient = wsclient.NewWSClient(d, wsclient.Options{MaxConcurrentHandlers: conf.NumWorkers})
 
-	d.cmdHandler = commands.CommandHandler(d, conf.Version, commands.Options{})
-	d.configHandler = configCommands.ConfigHandler(d, conf.Version, configCommands.Options{})
+	d.cmdHandler = commands.CommandHandler(d, conf.Version, commands.Options{CmdIndicator: " "})
+	d.configHandler = configCommands.ConfigHandler(d, conf.Version, configCommands.Options{CmdIndicator: " "})
 
 	d.connectRateLimiter = rate.NewLimiter(rate.Every(5*time.Second), 1)
 	d.messageRateLimiter = rate.NewLimiter(rate.Every(60*time.Second), 120)
