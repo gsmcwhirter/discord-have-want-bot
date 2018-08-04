@@ -80,9 +80,11 @@ func (h *handlers) guildCommandIndicator(gid snowflake.Snowflake) string {
 	return s.ControlSequence
 }
 
-func (h *handlers) attemptConfigHandler(cmdIndicator string, content string, m etfapi.Message, gid snowflake.Snowflake, origRespStr string, origErr error) (respStr string, err error) {
+func (h *handlers) attemptConfigHandler(req wsclient.WSMessage, cmdIndicator string, content string, m etfapi.Message, gid snowflake.Snowflake, origRespStr string, origErr error) (respStr string, err error) {
 	// TODO: check auth
 	if !h.bot.IsGuildAdmin(gid, m.AuthorID()) {
+		_ = level.Info(logging.WithContext(req.Ctx, h.deps.Logger())).Log("message", "non-admin trying to config", "author_id", m.AuthorID().ToString(), "guild_id", gid.ToString())
+
 		respStr = origRespStr
 		err = origErr
 		return
@@ -136,7 +138,7 @@ func (h *handlers) handleMessage(p *etfapi.Payload, req wsclient.WSMessage, resp
 	cmdContent := h.deps.CommandHandler().CommandIndicator() + strings.TrimPrefix(content, cmdIndicator)
 	respStr, err := h.deps.CommandHandler().HandleLine(m.AuthorIDString(), gid.ToString(), cmdContent)
 	if err != nil {
-		respStr, err = h.attemptConfigHandler(cmdIndicator, content, m, gid, respStr, err)
+		respStr, err = h.attemptConfigHandler(req, cmdIndicator, content, m, gid, respStr, err)
 	}
 
 	if err != nil {

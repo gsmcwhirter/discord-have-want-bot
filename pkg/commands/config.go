@@ -160,6 +160,7 @@ func ConfigCommandHandler(deps dependencies, preCommand string) *cmdhandler.Comm
 		PreCommand:  preCommand,
 		Placeholder: "action",
 	})
+	ch.SetHandler("list", cmdhandler.NewLineHandler(cc.list))
 	ch.SetHandler("get", cmdhandler.NewLineHandler(cc.get))
 	ch.SetHandler("set", cmdhandler.NewLineHandler(cc.set))
 	ch.SetHandler("reset", cmdhandler.NewLineHandler(cc.reset))
