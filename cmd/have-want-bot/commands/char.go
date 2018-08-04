@@ -14,8 +14,6 @@ import (
 	"github.com/gsmcwhirter/eso-discord/pkg/storage"
 )
 
-const triplet = "```"
-
 type charCommands struct {
 	preCommand string
 	deps       dependencies
@@ -55,7 +53,7 @@ func (c *charCommands) show(user, guild, args string) (string, error) {
 %[1]s
 	%[4]s
 %[1]s
-`, triplet, char.GetName(), itemsDescription(char, "    "), skillsDescription(char, "    "))
+`, "```", char.GetName(), itemsDescription(char, "    "), skillsDescription(char, "    "))
 
 	return charDescription, nil
 }
