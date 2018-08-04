@@ -7,14 +7,14 @@ import (
 	"github.com/gsmcwhirter/discord-bot-lib/util"
 	"github.com/pkg/errors"
 
-	"github.com/gsmcwhirter/eso-discord/pkg/cmdhandler"
-	"github.com/gsmcwhirter/eso-discord/pkg/parser"
-	"github.com/gsmcwhirter/eso-discord/pkg/storage"
+	"github.com/gsmcwhirter/discord-have-want-bot/pkg/storage"
+	"github.com/gsmcwhirter/go-util/cmdhandler"
+	"github.com/gsmcwhirter/go-util/parser"
 )
 
 type configCommands struct {
 	preCommand string
-	deps       dependencies
+	deps       configDependencies
 }
 
 func (c *configCommands) list(user, guild, args string) (string, error) {
@@ -147,7 +147,7 @@ func (c *configCommands) reset(user, guild, args string) (string, error) {
 }
 
 // ConfigCommandHandler TODOC
-func ConfigCommandHandler(deps dependencies, preCommand string) *cmdhandler.CommandHandler {
+func ConfigCommandHandler(deps configDependencies, preCommand string) *cmdhandler.CommandHandler {
 	p := parser.NewParser(parser.Options{
 		CmdIndicator: " ",
 	})

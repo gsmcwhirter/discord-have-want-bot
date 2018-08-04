@@ -13,11 +13,11 @@ import (
 	"github.com/gsmcwhirter/discord-bot-lib/logging"
 	"github.com/gsmcwhirter/discord-bot-lib/snowflake"
 	"github.com/gsmcwhirter/discord-bot-lib/wsclient"
-	"github.com/gsmcwhirter/eso-discord/pkg/cmdhandler"
-	"github.com/gsmcwhirter/eso-discord/pkg/parser"
+	"github.com/gsmcwhirter/go-util/cmdhandler"
+	"github.com/gsmcwhirter/go-util/parser"
 	"golang.org/x/time/rate"
 
-	"github.com/gsmcwhirter/eso-discord/pkg/storage"
+	"github.com/gsmcwhirter/discord-have-want-bot/pkg/storage"
 )
 
 var errUnauthorized = errors.New("unauthorized")

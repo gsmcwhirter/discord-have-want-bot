@@ -1,24 +1,19 @@
 BUILD_DATE := `date -u +%Y%m%d`
 VERSION ?= $(shell git describe --tags --always --dirty 2>/dev/null || echo v0.0.1)
 GIT_SHA := $(shell git rev-parse HEAD)
+
 APP_NAME := have-want-bot
-REPL_NAME := botrepl
-PROJECT := github.com/gsmcwhirter/eso-discord
+REPL_NAME := have-want-repl
+PROJECT := github.com/gsmcwhirter/discord-have-want-bot
+
 SERVER := discordbot@evogames.org:~/eso-discord/
+CONF_FILE := ./have-want-config.toml
+SERVICE_FILE := ./eso-have-want-bot.service
+INSTALLER := ./have-want-install.sh
 
 # can specify V=1 on the line with `make` to get verbose output
 V ?= 0
 Q = $(if $(filter 1,$V),,@)
-
-# Entrypoints:
-# 	- `make` (show help)
-# 	- `make all` (deps + debug)
-# 	- `make deps` (get dependencies)
-# 	- `make` / `make debug` (build debug)
-#   - `make test` (run tests)
-#	- `make release` (build release)
-#	- `make release-upload` (to build release and upload at once)
-#	- `make release && make upload-release-bundles` (to build and upload separately)
 
 .DEFAULT_GOAL := help
 
@@ -38,6 +33,8 @@ generate:
 build-release-bundles: build-release
 	$Q gzip -k -f bin/$(APP_NAME)
 	$Q cp bin/$(APP_NAME).gz bin/$(APP_NAME)-$(VERSION).gz
+	$Q gzip -k -f bin/$(REPL_NAME)
+	$Q cp bin/$(REPL_NAME).gz bin/$(REPL_NAME)-$(VERSION).gz
 
 clean:  ## Remove compiled artifacts
 	$Q rm bin/*
@@ -53,7 +50,7 @@ deps:  ## Download dependencies
 	$Q # $Q gometalinter --install
 
 test:  ## Run the tests
-	$Q go test -cover ./pkg/...
+	$Q go test -cover ./...
 
 version:  ## Print the version string and git sha that would be recorded if a release was built now
 	$Q echo $(VERSION) $(GIT_SHA)
@@ -65,8 +62,9 @@ vet:  ## Run the linter
 release-upload: release upload
 
 upload:
-	$Q scp ./bin/$(REPL_NAME) ./bin/$(APP_NAME).gz ./config.toml ./eso-have-want-bot.service ./install.sh $(SERVER)
-	$Q scp ./bin/$(APP_NAME)-$(VERSION).gz $(SERVER)
+	$Q scp $(CONF_FILE) $(SERVICE_FILE) $(INSTALLER) $(SERVER)
+	$Q scp  ./bin/$(APP_NAME).gz ./bin/$(APP_NAME)-$(VERSION).gz $(SERVER)
+	$Q scp ./bin/$(REPL_NAME).gz ./bin/$(REPL_NAME)-$(VERSION).gz $(SERVER)
 
 help:  ## Show the help message
 	@awk 'BEGIN {FS = ":.*?## "} /^[a-zA-Z_-]+:.*?## / {printf "\033[36m%-30s\033[0m %s\n", $$1, $$2}' ./Makefile

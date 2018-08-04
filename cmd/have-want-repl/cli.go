@@ -4,23 +4,23 @@ import (
 	"github.com/pkg/errors"
 	"github.com/spf13/viper"
 
-	"github.com/gsmcwhirter/eso-discord/pkg/options"
+	"github.com/gsmcwhirter/go-util/cli"
 )
 
-func setup(start func(config) error) *options.Command {
-	cli := options.NewCLI(AppName, BuildVersion, BuildSHA, BuildDate, options.CommandOptions{
+func setup(start func(config) error) *cli.Command {
+	c := cli.NewCLI(AppName, BuildVersion, BuildSHA, BuildDate, cli.CommandOptions{
 		ShortHelp: "Manage the discord bot",
-		Args:      options.NoArgs,
+		Args:      cli.NoArgs,
 	})
 
 	var configFile string
 
-	cli.Flags().StringVar(&configFile, "config", "./config.toml", "The config file to use")
-	cli.Flags().String("user", "", "The discord user string to impersonate")
-	cli.Flags().String("database", "", "The database file")
-	cli.Flags().String("test_thing", "", "Testing")
+	c.Flags().StringVar(&configFile, "config", "./config.toml", "The config file to use")
+	c.Flags().String("user", "", "The discord user string to impersonate")
+	c.Flags().String("database", "", "The database file")
+	c.Flags().String("test_thing", "", "Testing")
 
-	cli.SetRunFunc(func(cmd *options.Command, args []string) (err error) {
+	c.SetRunFunc(func(cmd *cli.Command, args []string) (err error) {
 		v := viper.New()
 
 		if configFile != "" {
@@ -43,14 +43,14 @@ func setup(start func(config) error) *options.Command {
 			return errors.Wrap(err, "could not read in config file")
 		}
 
-		c := config{}
-		err = v.Unmarshal(&c)
+		conf := config{}
+		err = v.Unmarshal(&conf)
 		if err != nil {
 			return errors.Wrap(err, "could not unmarshal config into struct")
 		}
 
-		return start(c)
+		return start(conf)
 	})
 
-	return cli
+	return c
 }

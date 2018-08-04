@@ -9,10 +9,10 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/gsmcwhirter/discord-bot-lib/util"
-	"github.com/gsmcwhirter/eso-discord/pkg/cmdhandler"
-	"github.com/gsmcwhirter/eso-discord/pkg/parser"
+	"github.com/gsmcwhirter/go-util/cmdhandler"
+	"github.com/gsmcwhirter/go-util/parser"
 
-	"github.com/gsmcwhirter/eso-discord/pkg/storage"
+	"github.com/gsmcwhirter/discord-have-want-bot/pkg/storage"
 )
 
 type needItemHandler struct {

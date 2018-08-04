@@ -7,7 +7,7 @@ import (
 	bolt "github.com/coreos/bbolt"
 	"github.com/go-kit/kit/log"
 
-	"github.com/gsmcwhirter/eso-discord/pkg/storage"
+	"github.com/gsmcwhirter/discord-have-want-bot/pkg/storage"
 )
 
 type dependencies struct {

@@ -5,7 +5,7 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/gsmcwhirter/eso-discord/pkg/storage"
+	"github.com/gsmcwhirter/discord-have-want-bot/pkg/storage"
 )
 
 func skillsDescription(char storage.Character, indent string) string {

@@ -5,7 +5,7 @@ import (
 	"github.com/gsmcwhirter/discord-bot-lib/util"
 	"github.com/pkg/errors"
 
-	"github.com/gsmcwhirter/eso-discord/pkg/storage"
+	"github.com/gsmcwhirter/discord-have-want-bot/pkg/storage"
 )
 
 // GetSettings TODOC

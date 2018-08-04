@@ -11,13 +11,12 @@ import (
 	"github.com/go-kit/kit/log/level"
 	"github.com/gsmcwhirter/discord-bot-lib/httpclient"
 	"github.com/gsmcwhirter/discord-bot-lib/wsclient"
-	"github.com/gsmcwhirter/eso-discord/pkg/cmdhandler"
+	"github.com/gsmcwhirter/go-util/cmdhandler"
 	"golang.org/x/time/rate"
 
-	"github.com/gsmcwhirter/eso-discord/cmd/have-want-bot/commands"
-	configCommands "github.com/gsmcwhirter/eso-discord/pkg/commands"
-	"github.com/gsmcwhirter/eso-discord/pkg/msghandler"
-	"github.com/gsmcwhirter/eso-discord/pkg/storage"
+	"github.com/gsmcwhirter/discord-have-want-bot/pkg/commands"
+	"github.com/gsmcwhirter/discord-have-want-bot/pkg/msghandler"
+	"github.com/gsmcwhirter/discord-have-want-bot/pkg/storage"
 )
 
 type dependencies struct {
@@ -84,7 +83,7 @@ func createDependencies(conf config) (d *dependencies, err error) {
 	d.wsClient = wsclient.NewWSClient(d, wsclient.Options{MaxConcurrentHandlers: conf.NumWorkers})
 
 	d.cmdHandler = commands.CommandHandler(d, conf.Version, commands.Options{CmdIndicator: " "})
-	d.configHandler = configCommands.ConfigHandler(d, conf.Version, configCommands.Options{CmdIndicator: " "})
+	d.configHandler = commands.ConfigHandler(d, conf.Version, commands.Options{CmdIndicator: " "})
 
 	d.connectRateLimiter = rate.NewLimiter(rate.Every(5*time.Second), 1)
 	d.messageRateLimiter = rate.NewLimiter(rate.Every(60*time.Second), 120)

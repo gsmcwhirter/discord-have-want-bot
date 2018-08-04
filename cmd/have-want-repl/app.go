@@ -6,7 +6,7 @@ import (
 
 	"github.com/steven-ferrer/gonsole"
 
-	"github.com/gsmcwhirter/eso-discord/cmd/have-want-bot/commands"
+	"github.com/gsmcwhirter/discord-have-want-bot/pkg/commands"
 )
 
 type config struct {

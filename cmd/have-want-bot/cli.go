@@ -4,29 +4,29 @@ import (
 	"github.com/pkg/errors"
 	"github.com/spf13/viper"
 
-	"github.com/gsmcwhirter/eso-discord/pkg/options"
+	"github.com/gsmcwhirter/go-util/cli"
 )
 
-func setup(start func(config) error) *options.Command {
-	cli := options.NewCLI(AppName, BuildVersion, BuildSHA, BuildDate, options.CommandOptions{
+func setup(start func(config) error) *cli.Command {
+	c := cli.NewCLI(AppName, BuildVersion, BuildSHA, BuildDate, cli.CommandOptions{
 		ShortHelp:    "Manage the discord bot",
-		Args:         options.NoArgs,
+		Args:         cli.NoArgs,
 		SilenceUsage: true,
 	})
 
 	var configFile string
 
-	cli.Flags().StringVar(&configFile, "config", "./config.toml", "The config file to use")
-	cli.Flags().String("client_id", "", "The discord bot client id")
-	cli.Flags().String("client_secret", "", "The discord bot client secret")
-	cli.Flags().String("client_token", "", "The discord bot client token")
-	cli.Flags().String("database", "", "The database file")
-	cli.Flags().String("log_format", "", "The logger format")
-	cli.Flags().String("log_level", "", "The minimum log level to show")
-	cli.Flags().Int("num_workers", 0, "The number of worker goroutines to run")
-	cli.Flags().String("pprof_hostport", "", "The host and port for the pprof http server to listen on")
+	c.Flags().StringVar(&configFile, "config", "./config.toml", "The config file to use")
+	c.Flags().String("client_id", "", "The discord bot client id")
+	c.Flags().String("client_secret", "", "The discord bot client secret")
+	c.Flags().String("client_token", "", "The discord bot client token")
+	c.Flags().String("database", "", "The database file")
+	c.Flags().String("log_format", "", "The logger format")
+	c.Flags().String("log_level", "", "The minimum log level to show")
+	c.Flags().Int("num_workers", 0, "The number of worker goroutines to run")
+	c.Flags().String("pprof_hostport", "", "The host and port for the pprof http server to listen on")
 
-	cli.SetRunFunc(func(cmd *options.Command, args []string) (err error) {
+	c.SetRunFunc(func(cmd *cli.Command, args []string) (err error) {
 		v := viper.New()
 
 		v.SetDefault("pprof_hostport", "127.0.0.1:6060")
@@ -51,16 +51,16 @@ func setup(start func(config) error) *options.Command {
 			return errors.Wrap(err, "could not read in config file")
 		}
 
-		c := config{}
-		err = v.Unmarshal(&c)
+		conf := config{}
+		err = v.Unmarshal(&conf)
 		if err != nil {
 			return errors.Wrap(err, "could not unmarshal config into struct")
 		}
 
-		c.Version = cmd.Version
+		conf.Version = cmd.Version
 
-		return start(c)
+		return start(conf)
 	})
 
-	return cli
+	return c
 }
