@@ -73,6 +73,10 @@ func (h *handlers) guildCommandIndicator(gid snowflake.Snowflake) string {
 		return h.defaultCommandIndicator
 	}
 
+	if s.ControlSequence == "" {
+		return h.defaultCommandIndicator
+	}
+
 	return s.ControlSequence
 }
 
