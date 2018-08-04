@@ -3,8 +3,8 @@ package commands
 import (
 	"fmt"
 
+	"github.com/gsmcwhirter/discord-bot-lib/cmdhandler"
 	"github.com/gsmcwhirter/discord-have-want-bot/pkg/storage"
-	"github.com/gsmcwhirter/go-util/cmdhandler"
 	"github.com/gsmcwhirter/go-util/parser"
 )
 
@@ -22,8 +22,13 @@ type rootCommands struct {
 	versionStr string
 }
 
-func (r rootCommands) version(user, guildw, args string) (string, error) {
-	return r.versionStr, nil
+func (c *rootCommands) version(user, guildw, args string) (cmdhandler.Response, error) {
+	r := &cmdhandler.SimpleResponse{
+		To:      user,
+		Content: c.versionStr,
+	}
+
+	return r, nil
 }
 
 // CommandHandler TODOC

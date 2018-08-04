@@ -7,8 +7,8 @@ import (
 
 	"github.com/pkg/errors"
 
+	"github.com/gsmcwhirter/discord-bot-lib/cmdhandler"
 	"github.com/gsmcwhirter/discord-bot-lib/util"
-	"github.com/gsmcwhirter/go-util/cmdhandler"
 	"github.com/gsmcwhirter/go-util/parser"
 
 	"github.com/gsmcwhirter/discord-have-want-bot/pkg/storage"
@@ -19,55 +19,75 @@ type charCommands struct {
 	deps       dependencies
 }
 
-func (c *charCommands) show(user, guild, args string) (string, error) {
+func (c *charCommands) show(user, guild, args string) (cmdhandler.Response, error) {
+	r := &cmdhandler.EmbedResponse{
+		To: user,
+	}
+
 	charName := strings.TrimSpace(args)
 
 	if len(charName) == 0 {
-		return "", ErrCharacterNameRequired
+		return r, ErrCharacterNameRequired
 	}
 
 	t, err := c.deps.UserAPI().NewTransaction(false)
 	if err != nil {
-		return "", err
+		return r, err
 	}
 	defer util.CheckDefer(t.Rollback)
 
 	bUser, err := t.AddUser(user) // add or get empty (don't save)
 	if err != nil {
-		return "", errors.Wrap(err, "unable to find user")
+		return r, errors.Wrap(err, "unable to find user")
 	}
 
 	char, err := bUser.GetCharacter(charName)
 	if err != nil {
-		return "", err
+		return r, err
 	}
 
-	charDescription := fmt.Sprintf(`__**%[2]s**__
+	r.Title = char.GetName()
+	r.Fields = []cmdhandler.EmbedField{
+		{
+			Name: "Needed Items",
+			Val:  itemsDescription(char, "    "),
+		},
+		{
+			Name: "Needed Skills",
+			Val:  skillsDescription(char, "    "),
+		},
+	}
 
-  Needed Items:
-%[1]s
-	%[3]s
-%[1]s
-		
-  Needed Skills:
-%[1]s
-	%[4]s
-%[1]s
-`, "```", char.GetName(), itemsDescription(char, "    "), skillsDescription(char, "    "))
+	// 	charDescription := fmt.Sprintf(`__**%[2]s**__
 
-	return charDescription, nil
+	//   Needed Items:
+	// %[1]s
+	// 	%[3]s
+	// %[1]s
+
+	//   Needed Skills:
+	// %[1]s
+	// 	%[4]s
+	// %[1]s
+	// `, "```", char.GetName(), itemsDescription(char, "    "), skillsDescription(char, "    "))
+
+	return r, nil
 }
 
-func (c *charCommands) create(user, guild, args string) (string, error) {
+func (c *charCommands) create(user, guild, args string) (cmdhandler.Response, error) {
+	r := &cmdhandler.SimpleResponse{
+		To: user,
+	}
+
 	charName := strings.TrimSpace(args)
 
 	if len(charName) == 0 {
-		return "", ErrCharacterNameRequired
+		return r, ErrCharacterNameRequired
 	}
 
 	t, err := c.deps.UserAPI().NewTransaction(true)
 	if err != nil {
-		return "", err
+		return r, err
 	}
 	defer util.CheckDefer(t.Rollback)
 
@@ -75,43 +95,48 @@ func (c *charCommands) create(user, guild, args string) (string, error) {
 	if err != nil {
 		bUser, err = t.AddUser(user)
 		if err != nil {
-			return "", errors.Wrap(err, "could not create character")
+			return r, errors.Wrap(err, "could not create character")
 		}
 	}
 
 	_, err = bUser.GetCharacter(charName)
 	if err != storage.ErrCharacterNotExist {
 		if err != nil {
-			return "", errors.Wrap(err, "could not verify character does not exist")
+			return r, errors.Wrap(err, "could not verify character does not exist")
 		}
 
-		return "", ErrCharacterExists
+		return r, ErrCharacterExists
 	}
 
 	_ = bUser.AddCharacter(charName)
 	err = t.SaveUser(bUser)
 	if err != nil {
-		return "", errors.Wrap(err, "could not save new character")
+		return r, errors.Wrap(err, "could not save new character")
 	}
 
 	err = t.Commit()
 	if err != nil {
-		return "", errors.Wrap(err, "could not save new character")
+		return r, errors.Wrap(err, "could not save new character")
 	}
 
-	return "character created", nil
+	r.Content = "character created"
+	return r, nil
 }
 
-func (c *charCommands) delete(user, guild, args string) (string, error) {
+func (c *charCommands) delete(user, guild, args string) (cmdhandler.Response, error) {
+	r := &cmdhandler.SimpleResponse{
+		To: user,
+	}
+
 	charName := strings.TrimSpace(args)
 
 	if len(charName) == 0 {
-		return "", ErrCharacterNameRequired
+		return r, ErrCharacterNameRequired
 	}
 
 	t, err := c.deps.UserAPI().NewTransaction(true)
 	if err != nil {
-		return "", err
+		return r, err
 	}
 	defer util.CheckDefer(t.Rollback)
 
@@ -119,39 +144,44 @@ func (c *charCommands) delete(user, guild, args string) (string, error) {
 	if err != nil {
 		bUser, err = t.AddUser(user)
 		if err != nil {
-			return "", errors.Wrap(err, "could not create character")
+			return r, errors.Wrap(err, "could not create character")
 		}
 	}
 
 	_, err = bUser.GetCharacter(charName)
 	if err != nil {
-		return "", errors.Wrap(err, "could not find character")
+		return r, errors.Wrap(err, "could not find character")
 	}
 
 	bUser.DeleteCharacter(charName)
 	err = t.SaveUser(bUser)
 	if err != nil {
-		return "", errors.Wrap(err, "could not delete character")
+		return r, errors.Wrap(err, "could not delete character")
 	}
 
 	err = t.Commit()
 	if err != nil {
-		return "", errors.Wrap(err, "could not delete character")
+		return r, errors.Wrap(err, "could not delete character")
 	}
 
-	return "character deleted", nil
+	r.Content = "character deleted"
+	return r, nil
 }
 
-func (c *charCommands) list(user, guild, args string) (string, error) {
+func (c *charCommands) list(user, guild, args string) (cmdhandler.Response, error) {
+	r := &cmdhandler.EmbedResponse{
+		To: user,
+	}
+
 	t, err := c.deps.UserAPI().NewTransaction(false)
 	if err != nil {
-		return "", err
+		return r, err
 	}
 	defer util.CheckDefer(t.Rollback)
 
 	bUser, err := t.AddUser(user) // add or get empty (don't save)
 	if err != nil {
-		return "", errors.Wrap(err, "unable to find user")
+		return r, errors.Wrap(err, "unable to find user")
 	}
 
 	chars := bUser.GetCharacters()
@@ -161,18 +191,26 @@ func (c *charCommands) list(user, guild, args string) (string, error) {
 	}
 	sort.Strings(charNames)
 
-	charList := "__**Your characters:**__\n```\n"
-	for _, charName := range charNames {
-		charList += fmt.Sprintf("  %s\n", charName)
+	r.Title = "Character List"
+	r.Fields = []cmdhandler.EmbedField{
+		{
+			Name: "Your Characters",
+			Val:  "  " + strings.Join(charNames, "\n  "),
+		},
 	}
-	charList += "```\n"
-	return charList, nil
+
+	return r, nil
 }
 
-func (c *charCommands) help(user, guild, args string) (string, error) {
-	helpStr := fmt.Sprintf("Usage: %s [%s]\n\n", c.preCommand, "action")
-	helpStr += "Available actions:\n  help\n  list\n  show [charname]\n  create [charname]\n  delete [charname]\n"
-	return helpStr, nil
+func (c *charCommands) help(user, guild, args string) (cmdhandler.Response, error) {
+	r := &cmdhandler.SimpleResponse{
+		To: user,
+	}
+
+	r.Content = fmt.Sprintf("Usage: %s [%s]\n\n", c.preCommand, "action")
+	r.Content += "Available actions:\n  help\n  list\n  show [charname]\n  create [charname]\n  delete [charname]\n"
+
+	return r, nil
 }
 
 // CharCommandHandler TODOC

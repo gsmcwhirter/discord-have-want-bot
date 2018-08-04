@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/gsmcwhirter/discord-bot-lib/cmdhandler"
+
 	"github.com/steven-ferrer/gonsole"
 
 	"github.com/gsmcwhirter/discord-have-want-bot/pkg/commands"
@@ -28,7 +30,7 @@ func start(c config) error {
 
 	scanner := gonsole.NewReader(os.Stdin)
 	var line string
-	var resp string
+	var resp cmdhandler.Response
 	for {
 		fmt.Print("> ")
 		line, err = scanner.Line()
@@ -42,10 +44,10 @@ func start(c config) error {
 
 		resp, err = ch.HandleLine(c.User, "", line)
 		if err != nil {
-			fmt.Printf("Error: %s\n", err)
-		} else {
-			fmt.Println(resp)
+			resp.IncludeError(err)
 		}
+
+		fmt.Println(resp.ToString())
 	}
 
 	return nil

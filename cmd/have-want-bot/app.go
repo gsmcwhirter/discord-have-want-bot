@@ -14,6 +14,8 @@ import (
 )
 
 type config struct {
+	BotName       string `mapstructure:"bot_name"`
+	BotPresence   string `mapstructure:"bot_presence"`
 	DiscordAPI    string `mapstructure:"discord_api"`
 	ClientID      string `mapstructure:"client_id"`
 	ClientSecret  string `mapstructure:"client_secret"`
@@ -40,6 +42,10 @@ func start(c config) error {
 		BotToken:     c.ClientToken,
 		APIURL:       c.DiscordAPI,
 		NumWorkers:   c.NumWorkers,
+
+		OS:          "linux",
+		BotName:     c.BotName,
+		BotPresence: c.BotPresence,
 	}
 
 	bot := discordapi.NewDiscordBot(deps, botConfig)

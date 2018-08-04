@@ -8,8 +8,8 @@ import (
 
 	"github.com/pkg/errors"
 
+	"github.com/gsmcwhirter/discord-bot-lib/cmdhandler"
 	"github.com/gsmcwhirter/discord-bot-lib/util"
-	"github.com/gsmcwhirter/go-util/cmdhandler"
 	"github.com/gsmcwhirter/go-util/parser"
 
 	"github.com/gsmcwhirter/discord-have-want-bot/pkg/storage"
@@ -20,13 +20,17 @@ type needItemHandler struct {
 	charName string
 }
 
-func (h *needItemHandler) HandleLine(user, guild, args string) (string, error) {
+func (h *needItemHandler) HandleLine(user, guild, args string) (cmdhandler.Response, error) {
+	r := &cmdhandler.SimpleResponse{
+		To: user,
+	}
+
 	args, ctRunes := parser.MaybeCount(args)
 
 	itemName := strings.TrimSpace(args)
 
 	if len(itemName) == 0 {
-		return "", ErrItemNameRequired
+		return r, ErrItemNameRequired
 	}
 
 	ctStr := strings.TrimSpace(ctRunes)
@@ -36,21 +40,22 @@ func (h *needItemHandler) HandleLine(user, guild, args string) (string, error) {
 
 	ct, err := strconv.Atoi(ctStr)
 	if err != nil {
-		return "", errors.Wrap(err, "could not interpret count to adjust item needs")
+		return r, errors.Wrap(err, "could not interpret count to adjust item needs")
 	}
 
 	if ct < 0 {
-		return "", ErrPositiveValueRequired
+		return r, ErrPositiveValueRequired
 	}
 
 	char, err := h.user.GetCharacter(h.charName)
 	if err != nil {
-		return "", errors.Wrap(err, "could not find character to adjust item needs")
+		return r, errors.Wrap(err, "could not find character to adjust item needs")
 	}
 
 	char.IncrNeededItem(itemName, uint64(ct))
 
-	return fmt.Sprintf("marked %s as needing +%d of %s", h.charName, ct, itemName), nil
+	r.Content = fmt.Sprintf("marked %s as needing +%d of %s", h.charName, ct, itemName)
+	return r, nil
 }
 
 type needPointsHandler struct {
@@ -58,13 +63,17 @@ type needPointsHandler struct {
 	charName string
 }
 
-func (h *needPointsHandler) HandleLine(user, guild, args string) (string, error) {
+func (h *needPointsHandler) HandleLine(user, guild, args string) (cmdhandler.Response, error) {
+	r := &cmdhandler.SimpleResponse{
+		To: user,
+	}
+
 	args, ctRunes := parser.MaybeCount(args)
 
 	skillName := strings.TrimSpace(args)
 
 	if len(skillName) == 0 {
-		return "", ErrSkillNameRequired
+		return r, ErrSkillNameRequired
 	}
 
 	ctStr := strings.TrimSpace(ctRunes)
@@ -74,21 +83,22 @@ func (h *needPointsHandler) HandleLine(user, guild, args string) (string, error)
 
 	ct, err := strconv.Atoi(ctStr)
 	if err != nil {
-		return "", errors.Wrap(err, "could not interpret count to adjust skill needs")
+		return r, errors.Wrap(err, "could not interpret count to adjust skill needs")
 	}
 
 	if ct < 0 {
-		return "", ErrPositiveValueRequired
+		return r, ErrPositiveValueRequired
 	}
 
 	char, err := h.user.GetCharacter(h.charName)
 	if err != nil {
-		return "", errors.Wrap(err, "could not find character to adjust skill needs")
+		return r, errors.Wrap(err, "could not find character to adjust skill needs")
 	}
 
 	char.IncrNeededSkill(skillName, uint64(ct))
 
-	return fmt.Sprintf("marked %s as needing +%d points in %s", h.charName, ct, skillName), nil
+	r.Content = fmt.Sprintf("marked %s as needing +%d points in %s", h.charName, ct, skillName)
+	return r, nil
 }
 
 type needCommands struct {
@@ -96,19 +106,23 @@ type needCommands struct {
 	deps       dependencies
 }
 
-func (c *needCommands) helpCharsPoints(user, guild, args string) (string, error) {
-	helpStr := fmt.Sprintf("Usage: %s [%s] [skill name] [count?]\n\n", c.preCommand+" pts", "charname")
-	helpStr += fmt.Sprintf("Available %ss:\n", "charname")
+func (c *needCommands) helpCharsPoints(user, guild, args string) (cmdhandler.Response, error) {
+	r := &cmdhandler.SimpleResponse{
+		To: user,
+	}
+
+	r.Content = fmt.Sprintf("Usage: %s [%s] [skill name] [count?]\n\n", c.preCommand+" pts", "charname")
+	r.Content += fmt.Sprintf("Available %ss:\n", "charname")
 
 	t, err := c.deps.UserAPI().NewTransaction(false)
 	if err != nil {
-		return helpStr, nil
+		return r, nil
 	}
 	defer util.CheckDefer(t.Rollback)
 
 	bUser, err := t.GetUser(user)
 	if err != nil {
-		return helpStr, nil
+		return r, nil
 	}
 
 	characters := bUser.GetCharacters()
@@ -119,24 +133,28 @@ func (c *needCommands) helpCharsPoints(user, guild, args string) (string, error)
 	}
 
 	sort.Strings(charNames)
-	helpStr += fmt.Sprintf("  %s", strings.Join(charNames, "\n  "))
+	r.Content += fmt.Sprintf("  %s", strings.Join(charNames, "\n  "))
 
-	return helpStr, nil
+	return r, nil
 }
 
-func (c *needCommands) helpCharsItems(user, guild, args string) (string, error) {
-	helpStr := fmt.Sprintf("Usage: %s [%s] [item name] [count?]\n\n", c.preCommand+" pts", "charname")
-	helpStr += fmt.Sprintf("Available %ss:\n", "charname")
+func (c *needCommands) helpCharsItems(user, guild, args string) (cmdhandler.Response, error) {
+	r := &cmdhandler.SimpleResponse{
+		To: user,
+	}
+
+	r.Content = fmt.Sprintf("Usage: %s [%s] [item name] [count?]\n\n", c.preCommand+" pts", "charname")
+	r.Content += fmt.Sprintf("Available %ss:\n", "charname")
 
 	t, err := c.deps.UserAPI().NewTransaction(false)
 	if err != nil {
-		return helpStr, nil
+		return r, nil
 	}
 	defer util.CheckDefer(t.Rollback)
 
 	bUser, err := t.GetUser(user)
 	if err != nil {
-		return helpStr, nil
+		return r, nil
 	}
 
 	characters := bUser.GetCharacters()
@@ -147,15 +165,19 @@ func (c *needCommands) helpCharsItems(user, guild, args string) (string, error) 
 	}
 
 	sort.Strings(charNames)
-	helpStr += fmt.Sprintf("  %s", strings.Join(charNames, "\n  "))
+	r.Content += fmt.Sprintf("  %s", strings.Join(charNames, "\n  "))
 
-	return helpStr, nil
+	return r, nil
 }
 
-func (c *needCommands) points(user, guild, args string) (string, error) {
+func (c *needCommands) points(user, guild, args string) (cmdhandler.Response, error) {
+	r := &cmdhandler.SimpleResponse{
+		To: user,
+	}
+
 	t, err := c.deps.UserAPI().NewTransaction(true)
 	if err != nil {
-		return "", err
+		return r, err
 	}
 	defer util.CheckDefer(t.Rollback)
 
@@ -163,7 +185,7 @@ func (c *needCommands) points(user, guild, args string) (string, error) {
 	if err != nil {
 		bUser, err = t.AddUser(user)
 		if err != nil {
-			return "", errors.Wrap(err, "could not create user")
+			return r, errors.Wrap(err, "could not create user")
 		}
 	}
 
@@ -184,29 +206,34 @@ func (c *needCommands) points(user, guild, args string) (string, error) {
 	for _, char := range characters {
 		ch.SetHandler(char.GetName(), &needPointsHandler{charName: char.GetName(), user: bUser})
 	}
-	retStr, err := ch.HandleLine(user, guild, args)
+
+	r2, err := ch.HandleLine(user, guild, args)
 
 	if err != nil {
-		return retStr, err
+		return r2, err
 	}
 
 	err = t.SaveUser(bUser)
 	if err != nil {
-		return "", errors.Wrap(err, "could not save points need")
+		return r2, errors.Wrap(err, "could not save points need")
 	}
 
 	err = t.Commit()
 	if err != nil {
-		return "", errors.Wrap(err, "could not save points need")
+		return r2, errors.Wrap(err, "could not save points need")
 	}
 
-	return retStr, nil
+	return r2, nil
 }
 
-func (c *needCommands) item(user, guild, args string) (string, error) {
+func (c *needCommands) item(user, guild, args string) (cmdhandler.Response, error) {
+	r := &cmdhandler.SimpleResponse{
+		To: user,
+	}
+
 	t, err := c.deps.UserAPI().NewTransaction(true)
 	if err != nil {
-		return "", err
+		return r, err
 	}
 	defer util.CheckDefer(t.Rollback)
 
@@ -214,7 +241,7 @@ func (c *needCommands) item(user, guild, args string) (string, error) {
 	if err != nil {
 		bUser, err = t.AddUser(user)
 		if err != nil {
-			return "", errors.Wrap(err, "could not create user")
+			return r, errors.Wrap(err, "could not create user")
 		}
 	}
 
@@ -235,23 +262,23 @@ func (c *needCommands) item(user, guild, args string) (string, error) {
 	for _, char := range characters {
 		ch.SetHandler(char.GetName(), &needItemHandler{charName: char.GetName(), user: bUser})
 	}
-	retStr, err := ch.HandleLine(user, guild, args)
+	r2, err := ch.HandleLine(user, guild, args)
 
 	if err != nil {
-		return retStr, err
+		return r2, err
 	}
 
 	err = t.SaveUser(bUser)
 	if err != nil {
-		return "", errors.Wrap(err, "could not save item need")
+		return r2, errors.Wrap(err, "could not save item need")
 	}
 
 	err = t.Commit()
 	if err != nil {
-		return "", errors.Wrap(err, "could not save item need")
+		return r2, errors.Wrap(err, "could not save item need")
 	}
 
-	return retStr, nil
+	return r2, nil
 }
 
 // NeedCommandHandler TODOC

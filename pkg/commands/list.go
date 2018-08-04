@@ -7,8 +7,8 @@ import (
 
 	"github.com/pkg/errors"
 
+	"github.com/gsmcwhirter/discord-bot-lib/cmdhandler"
 	"github.com/gsmcwhirter/discord-bot-lib/util"
-	"github.com/gsmcwhirter/go-util/cmdhandler"
 	"github.com/gsmcwhirter/go-util/parser"
 )
 
@@ -17,27 +17,39 @@ type listCommands struct {
 	deps       dependencies
 }
 
-func (c *listCommands) items(user, guild, args string) (string, error) {
+func (c *listCommands) items(user, guild, args string) (cmdhandler.Response, error) {
+	r := &cmdhandler.EmbedResponse{
+		To: user,
+	}
+
 	charName := strings.TrimSpace(args)
 
 	t, err := c.deps.UserAPI().NewTransaction(false)
 	if err != nil {
-		return "", err
+		return r, err
 	}
 	defer util.CheckDefer(t.Rollback)
 
 	bUser, err := t.AddUser(user) // add or get empty (don't save)
 	if err != nil {
-		return "", errors.Wrap(err, "unable to find user")
+		return r, errors.Wrap(err, "unable to find user")
 	}
 
 	if charName != "" {
 		char, err := bUser.GetCharacter(charName)
 		if err != nil {
-			return "", err
+			return r, err
 		}
 
-		return fmt.Sprintf("__**%s needed items:**__\n```\n  %s\n```\n", char.GetName(), itemsDescription(char, "  ")), nil
+		r.Title = char.GetName()
+		r.Fields = []cmdhandler.EmbedField{
+			{
+				Name: "Needed Items",
+				Val:  itemsDescription(char, "  "),
+			},
+		}
+
+		return r, nil
 	}
 
 	itemCounts := map[string]uint64{}
@@ -53,36 +65,56 @@ func (c *listCommands) items(user, guild, args string) (string, error) {
 	}
 	sort.Strings(itemNames)
 
-	itemDescrip := "__**All needed items:**__\n```\n"
+	itemDescrip := ""
 	for _, itemName := range itemNames {
 		ct := itemCounts[itemName]
 		itemDescrip += fmt.Sprintf("  %s x%d\n", itemName, ct)
 	}
-	itemDescrip += "```\n"
-	return itemDescrip, nil
+
+	r.Title = "All Characters"
+	r.Fields = []cmdhandler.EmbedField{
+		{
+			Name: "Needed Items",
+			Val:  itemDescrip,
+		},
+	}
+
+	return r, nil
 }
 
-func (c *listCommands) points(user, guild, args string) (string, error) {
+func (c *listCommands) points(user, guild, args string) (cmdhandler.Response, error) {
+	r := &cmdhandler.EmbedResponse{
+		To: user,
+	}
+
 	charName := strings.TrimSpace(args)
 
 	t, err := c.deps.UserAPI().NewTransaction(false)
 	if err != nil {
-		return "", err
+		return r, err
 	}
 	defer util.CheckDefer(t.Rollback)
 
 	bUser, err := t.AddUser(user) // add or get empty (don't save)
 	if err != nil {
-		return "", errors.Wrap(err, "unable to find user")
+		return r, errors.Wrap(err, "unable to find user")
 	}
 
 	if charName != "" {
 		char, err := bUser.GetCharacter(charName)
 		if err != nil {
-			return "", err
+			return r, err
 		}
 
-		return fmt.Sprintf("__**%s needed points:**__\n```\n  %s\n```\n", char.GetName(), skillsDescription(char, "  ")), nil
+		r.Title = char.GetName()
+		r.Fields = []cmdhandler.EmbedField{
+			{
+				Name: "Needed Points",
+				Val:  skillsDescription(char, "  "),
+			},
+		}
+
+		return r, nil
 	}
 
 	skillCounts := map[string]uint64{}
@@ -99,13 +131,21 @@ func (c *listCommands) points(user, guild, args string) (string, error) {
 
 	sort.Strings(skillNames)
 
-	skillDescrip := "__**All needed skills:**__\n```\n"
+	skillDescrip := ""
 	for _, skillName := range skillNames {
 		ct := skillCounts[skillName]
 		skillDescrip += fmt.Sprintf("  %s x%d\n", skillName, ct)
 	}
-	skillDescrip += "```\n"
-	return skillDescrip, nil
+
+	r.Title = "All Characters"
+	r.Fields = []cmdhandler.EmbedField{
+		{
+			Name: "Needed Points",
+			Val:  skillDescrip,
+		},
+	}
+
+	return r, nil
 }
 
 // ListCommandHandler TODOC

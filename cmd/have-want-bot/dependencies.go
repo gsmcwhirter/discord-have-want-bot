@@ -9,9 +9,9 @@ import (
 	bolt "github.com/coreos/bbolt"
 	"github.com/go-kit/kit/log"
 	"github.com/go-kit/kit/log/level"
+	"github.com/gsmcwhirter/discord-bot-lib/cmdhandler"
 	"github.com/gsmcwhirter/discord-bot-lib/httpclient"
 	"github.com/gsmcwhirter/discord-bot-lib/wsclient"
-	"github.com/gsmcwhirter/go-util/cmdhandler"
 	"golang.org/x/time/rate"
 
 	"github.com/gsmcwhirter/discord-have-want-bot/pkg/commands"

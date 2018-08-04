@@ -7,8 +7,8 @@ import (
 	"github.com/gsmcwhirter/discord-bot-lib/util"
 	"github.com/pkg/errors"
 
+	"github.com/gsmcwhirter/discord-bot-lib/cmdhandler"
 	"github.com/gsmcwhirter/discord-have-want-bot/pkg/storage"
-	"github.com/gsmcwhirter/go-util/cmdhandler"
 	"github.com/gsmcwhirter/go-util/parser"
 )
 
@@ -17,50 +17,64 @@ type configCommands struct {
 	deps       configDependencies
 }
 
-func (c *configCommands) list(user, guild, args string) (string, error) {
+func (c *configCommands) list(user, guild, args string) (cmdhandler.Response, error) {
+	r := &cmdhandler.SimpleResponse{
+		To: user,
+	}
+
 	t, err := c.deps.GuildAPI().NewTransaction(false)
 	if err != nil {
-		return "", err
+		return r, err
 	}
 	defer util.CheckDefer(t.Rollback)
 
 	bGuild, err := t.AddGuild(guild)
 	if err != nil {
-		return "", errors.Wrap(err, "unable to find guild")
+		return r, errors.Wrap(err, "unable to find guild")
 	}
 
 	s := bGuild.GetSettings()
-	return s.PrettyString(), nil
+	r.Content = s.PrettyString()
+	return r, nil
 }
 
-func (c *configCommands) get(user, guild, args string) (string, error) {
+func (c *configCommands) get(user, guild, args string) (cmdhandler.Response, error) {
+	r := &cmdhandler.SimpleResponse{
+		To: user,
+	}
+
 	settingName := strings.TrimSpace(args)
 
 	t, err := c.deps.GuildAPI().NewTransaction(false)
 	if err != nil {
-		return "", err
+		return r, err
 	}
 	defer util.CheckDefer(t.Rollback)
 
 	bGuild, err := t.AddGuild(guild)
 	if err != nil {
-		return "", errors.Wrap(err, "unable to find guild")
+		return r, errors.Wrap(err, "unable to find guild")
 	}
 
 	s := bGuild.GetSettings()
 	sVal, err := s.GetSettingString(settingName)
 	if err != nil {
-		return "", fmt.Errorf("'%s' is not the name of a setting", settingName)
+		return r, fmt.Errorf("'%s' is not the name of a setting", settingName)
 	}
 
-	return fmt.Sprintf("```\n%s: '%s'\n```", settingName, sVal), nil
+	r.Content = fmt.Sprintf("```\n%s: '%s'\n```", settingName, sVal)
+	return r, nil
 }
 
 type argPair struct {
 	key, val string
 }
 
-func (c *configCommands) set(user, guild, args string) (string, error) {
+func (c *configCommands) set(user, guild, args string) (cmdhandler.Response, error) {
+	r := &cmdhandler.SimpleResponse{
+		To: user,
+	}
+
 	args = strings.TrimSpace(args)
 
 	argList := strings.Split(args, " ")
@@ -73,7 +87,7 @@ func (c *configCommands) set(user, guild, args string) (string, error) {
 
 		argPairList := strings.SplitN(arg, "=", 2)
 		if len(argPairList) != 2 {
-			return "", fmt.Errorf("could not parse setting '%s'", arg)
+			return r, fmt.Errorf("could not parse setting '%s'", arg)
 		}
 		argPairs = append(argPairs, argPair{
 			key: argPairList[0],
@@ -82,52 +96,56 @@ func (c *configCommands) set(user, guild, args string) (string, error) {
 	}
 
 	if len(argPairs) == 0 {
-		return "", errors.New("no settings to save")
+		return r, errors.New("no settings to save")
 	}
 
 	t, err := c.deps.GuildAPI().NewTransaction(true)
 	if err != nil {
-		return "", err
+		return r, err
 	}
 	defer util.CheckDefer(t.Rollback)
 
 	bGuild, err := t.AddGuild(guild)
 	if err != nil {
-		return "", errors.Wrap(err, "unable to find guild")
+		return r, errors.Wrap(err, "unable to find guild")
 	}
 
 	s := bGuild.GetSettings()
 	for _, ap := range argPairs {
 		err = s.SetSettingString(ap.key, ap.val)
 		if err != nil {
-			return "", err
+			return r, err
 		}
 	}
 	bGuild.SetSettings(s)
 
 	err = t.SaveGuild(bGuild)
 	if err != nil {
-		return "", errors.Wrap(err, "could not save guild settings")
+		return r, errors.Wrap(err, "could not save guild settings")
 	}
 
 	err = t.Commit()
 	if err != nil {
-		return "", errors.Wrap(err, "could not save guild settings")
+		return r, errors.Wrap(err, "could not save guild settings")
 	}
 
 	return c.list(user, guild, "")
 }
 
-func (c *configCommands) reset(user, guild, args string) (string, error) {
+func (c *configCommands) reset(user, guild, args string) (cmdhandler.Response, error) {
+	r := &cmdhandler.SimpleResponse{
+		To: user,
+	}
+
 	t, err := c.deps.GuildAPI().NewTransaction(true)
 	if err != nil {
-		return "", err
+		return r, err
 	}
 	defer util.CheckDefer(t.Rollback)
 
 	bGuild, err := t.AddGuild(guild)
 	if err != nil {
-		return "", errors.Wrap(err, "unable to find or add guild")
+		return r, errors.Wrap(err, "unable to find or add guild")
 	}
 
 	s := storage.GuildSettings{}
@@ -135,12 +153,12 @@ func (c *configCommands) reset(user, guild, args string) (string, error) {
 
 	err = t.SaveGuild(bGuild)
 	if err != nil {
-		return "", errors.Wrap(err, "could not save guild settings")
+		return r, errors.Wrap(err, "could not save guild settings")
 	}
 
 	err = t.Commit()
 	if err != nil {
-		return "", errors.Wrap(err, "could not save guild settings")
+		return r, errors.Wrap(err, "could not save guild settings")
 	}
 
 	return c.list(user, guild, args)
