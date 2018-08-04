@@ -1,5 +1,7 @@
 package storage
 
+//go:generate protoc --go_out=. --proto_path=. ./guildapi.proto
+
 import (
 	"fmt"
 	"strings"

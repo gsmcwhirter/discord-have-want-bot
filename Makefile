@@ -24,18 +24,13 @@ Q = $(if $(filter 1,$V),,@)
 
 all: deps debug  ## Download dependencies and do a debug build
 
-build-debug: version proto generate
+build-debug: version generate
 	$Q go build -v -ldflags "-X main.AppName=$(APP_NAME) -X main.BuildVersion=$(VERSION) -X main.BuildSHA=$(GIT_SHA) -X main.BuildDate=$(BUILD_DATE)" -o bin/$(APP_NAME) -race $(PROJECT)/cmd/$(APP_NAME)
 	$Q go build -v -ldflags "-X main.AppName=$(REPL_NAME) -X main.BuildVersion=$(VERSION) -X main.BuildSHA=$(GIT_SHA) -X main.BuildDate=$(BUILD_DATE)" -o bin/$(REPL_NAME) -race $(PROJECT)/cmd/$(REPL_NAME)
 
-build-release: version proto generate
+build-release: version generate
 	$Q GOOS=linux go build -v -ldflags "-s -w -X main.AppName=$(APP_NAME) -X main.BuildVersion=$(VERSION) -X main.BuildSHA=$(GIT_SHA) -X main.BuildDate=$(BUILD_DATE)" -o bin/$(APP_NAME) $(PROJECT)/cmd/$(APP_NAME)
 	$Q GOOS=linux go build -v -ldflags "-s -w -X main.AppName=$(REPL_NAME) -X main.BuildVersion=$(VERSION) -X main.BuildSHA=$(GIT_SHA) -X main.BuildDate=$(BUILD_DATE)" -o bin/$(REPL_NAME) $(PROJECT)/cmd/$(REPL_NAME)
-
-proto: pkg/storage/storage.pb.go  ## Compile the protobuf files
-
-pkg/storage/storage.pb.go: pkg/storage/storage.proto
-	protoc --go_out=pkg/storage --proto_path=pkg/storage pkg/storage/storage.proto
 
 generate:
 	$Q go generate ./...
@@ -47,26 +42,15 @@ build-release-bundles: build-release
 clean:  ## Remove compiled artifacts
 	$Q rm bin/*
 
-debug: proto generate vet build-debug  ## Debug build: create a dev build (enable race detection, don't strip symbols)
+debug: generate vet build-debug  ## Debug build: create a dev build (enable race detection, don't strip symbols)
 
-release: proto generate test build-release-bundles  ## Release build: create a release build (disable race detection, strip symbols)
+release: generate test build-release-bundles  ## Release build: create a release build (disable race detection, strip symbols)
 
 deps:  ## Download dependencies
+	$Q go get ./...
 	$Q # for development and linting
-	$Q go get golang.org/x/tools/cmd/godoc
-	$Q go get golang.org/x/tools/cmd/goimports
 	$Q go get -u github.com/alecthomas/gometalinter
 	$Q # $Q gometalinter --install
-	$Q go get -u github.com/pkg/errors
-	$Q go get -u github.com/coreos/bbolt/...
-	$Q go get -u github.com/golang/protobuf/protoc-gen-go
-	$Q go get -u github.com/gorilla/websocket
-	$Q go get -u github.com/tj/kingpin
-	$Q go get -u github.com/steven-ferrer/gonsole
-	$Q go get -u golang.org/x/oauth2
-	$Q go get -u github.com/mailru/easyjson/...
-	$Q go get -u github.com/go-kit/kit/log/...
-	$Q go get -u github.com/rs/xid
 
 test:  ## Run the tests
 	$Q go test -cover ./pkg/...

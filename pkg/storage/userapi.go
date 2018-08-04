@@ -1,5 +1,7 @@
 package storage
 
+//go:generate protoc --go_out=. --proto_path=. ./userapi.proto
+
 // UserAPI TODOC
 type UserAPI interface {
 	NewTransaction(writable bool) (UserAPITx, error)

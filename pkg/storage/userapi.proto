@@ -1,0 +1,23 @@
+syntax = "proto3";
+package storage;
+
+message ProtoItem {
+    string description = 1;
+    uint64 count = 2;
+}
+
+message ProtoSkill {
+    string name = 1;
+    uint64 ct = 2;
+}
+
+message ProtoCharacter {
+    string name = 1;
+    map<string, ProtoSkill> needed_skills = 2;
+    map<string, ProtoItem> needed_items = 3;
+}
+
+message ProtoUser {
+    string name = 1;
+    map<string, ProtoCharacter> characters = 2;
+}
