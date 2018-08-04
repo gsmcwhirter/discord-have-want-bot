@@ -23,7 +23,7 @@ func setup(start func(config) error) *options.Command {
 	cli.Flags().String("database", "", "The database file")
 	cli.Flags().String("log_format", "", "The logger format")
 	cli.Flags().String("log_level", "", "The minimum log level to show")
-	cli.Flags().Int("numworkers", 0, "The number of worker goroutines to run")
+	cli.Flags().Int("num_workers", 0, "The number of worker goroutines to run")
 	cli.Flags().String("pprof_hostport", "", "The host and port for the pprof http server to listen on")
 
 	cli.SetRunFunc(func(cmd *options.Command, args []string) (err error) {

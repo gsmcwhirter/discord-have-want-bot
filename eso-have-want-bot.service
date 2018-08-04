@@ -13,8 +13,8 @@ LimitNOFILE=999996
 ExecStart=/home/discordbot/eso-discord/have-want-bot \
             --config /home/discordbot/eso-discord/config.toml \
             --database /home/discordbot/eso-discord/discordbot.db \
-            --num-workers 20 \
-            --log-level info
+            --num_workers 20 \
+            --log_level info
 
 KillMode=mixed
 KillSignal=SIGTERM
