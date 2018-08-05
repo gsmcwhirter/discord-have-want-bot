@@ -38,11 +38,15 @@ type handlers struct {
 	bot                     discordapi.DiscordBot
 	deps                    dependencies
 	defaultCommandIndicator string
+	successColor            int
+	errorColor              int
 }
 
 // Options TODOC
 type Options struct {
 	DefaultCommandIndicator string
+	SuccessColor            int
+	ErrorColor              int
 }
 
 // NewHandlers TODOC
@@ -50,6 +54,8 @@ func NewHandlers(deps dependencies, opts Options) Handlers {
 	h := handlers{
 		deps: deps,
 		defaultCommandIndicator: opts.DefaultCommandIndicator,
+		successColor:            opts.SuccessColor,
+		errorColor:              opts.ErrorColor,
 	}
 
 	return &h
@@ -146,9 +152,12 @@ func (h *handlers) handleMessage(p *etfapi.Payload, req wsclient.WSMessage, resp
 	if err != nil {
 		_ = level.Error(logger).Log("message", "error handling command", "contents", content, "err", err)
 		resp.IncludeError(err)
-		resp.SetColor(0xff0000)
+	}
+
+	if resp.HasErrors() {
+		resp.SetColor(h.errorColor)
 	} else {
-		resp.SetColor(0x62aa00)
+		resp.SetColor(h.successColor)
 	}
 
 	err = h.deps.MessageRateLimiter().Wait(req.Ctx)

@@ -299,8 +299,9 @@ func NeedCommandHandler(deps dependencies, preCommand string) *cmdhandler.Comman
 		deps:       deps,
 	}
 	ch := cmdhandler.NewCommandHandler(p, cmdhandler.Options{
-		PreCommand:  preCommand,
-		Placeholder: "type",
+		PreCommand:          preCommand,
+		Placeholder:         "type",
+		HelpOnEmptyCommands: true,
 	})
 	ch.SetHandler("pts", cmdhandler.NewLineHandler(nc.points))
 	ch.SetHandler("item", cmdhandler.NewLineHandler(nc.item))

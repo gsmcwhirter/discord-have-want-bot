@@ -40,7 +40,9 @@ func CommandHandler(deps dependencies, versionStr string, opts Options) *cmdhand
 		versionStr: versionStr,
 	}
 
-	ch := cmdhandler.NewCommandHandler(p, cmdhandler.Options{})
+	ch := cmdhandler.NewCommandHandler(p, cmdhandler.Options{
+		NoHelpOnUnknownCommands: true,
+	})
 	ch.SetHandler("version", cmdhandler.NewLineHandler(rh.version))
 	ch.SetHandler("char", CharCommandHandler(deps, fmt.Sprintf("%schar", opts.CmdIndicator)))
 	ch.SetHandler("need", NeedCommandHandler(deps, fmt.Sprintf("%sneed", opts.CmdIndicator)))
@@ -60,8 +62,15 @@ func ConfigHandler(deps configDependencies, versionStr string, opts Options) *cm
 		CmdIndicator: opts.CmdIndicator,
 	})
 
-	ch := cmdhandler.NewCommandHandler(p, cmdhandler.Options{})
-	ch.SetHandler("config", ConfigCommandHandler(deps, fmt.Sprintf("%sconfig", opts.CmdIndicator)))
+	ch := cmdhandler.NewCommandHandler(p, cmdhandler.Options{
+		NoHelpOnUnknownCommands: true,
+	})
+	ch.SetHandler("config-hw", ConfigCommandHandler(deps, fmt.Sprintf("%sconfig", opts.CmdIndicator)))
+	// disable help for config
+	ch.SetHandler("help", cmdhandler.NewLineHandler(func(user, guild, args string) (cmdhandler.Response, error) {
+		r := &cmdhandler.SimpleEmbedResponse{}
+		return r, parser.ErrUnknownCommand
+	}))
 
 	return ch
 }

@@ -90,6 +90,8 @@ func createDependencies(conf config) (d *dependencies, err error) {
 
 	d.msgHandlers = msghandler.NewHandlers(d, msghandler.Options{
 		DefaultCommandIndicator: "!",
+		ErrorColor:              0xff0000,
+		SuccessColor:            0x62aa00,
 	})
 
 	return

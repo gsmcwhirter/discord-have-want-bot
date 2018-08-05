@@ -162,8 +162,9 @@ func ListCommandHandler(deps dependencies, preCommand string) *cmdhandler.Comman
 		deps:       deps,
 	}
 	ch := cmdhandler.NewCommandHandler(p, cmdhandler.Options{
-		PreCommand:  preCommand,
-		Placeholder: "type",
+		PreCommand:          preCommand,
+		Placeholder:         "type",
+		HelpOnEmptyCommands: true,
 	})
 	ch.SetHandler("items", cmdhandler.NewLineHandler(cc.items))
 	ch.SetHandler("points", cmdhandler.NewLineHandler(cc.points))

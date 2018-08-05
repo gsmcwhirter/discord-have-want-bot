@@ -175,8 +175,9 @@ func ConfigCommandHandler(deps configDependencies, preCommand string) *cmdhandle
 	}
 
 	ch := cmdhandler.NewCommandHandler(p, cmdhandler.Options{
-		PreCommand:  preCommand,
-		Placeholder: "action",
+		PreCommand:          preCommand,
+		Placeholder:         "action",
+		HelpOnEmptyCommands: true,
 	})
 	ch.SetHandler("list", cmdhandler.NewLineHandler(cc.list))
 	ch.SetHandler("get", cmdhandler.NewLineHandler(cc.get))

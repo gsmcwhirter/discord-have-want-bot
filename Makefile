@@ -39,7 +39,7 @@ build-release-bundles: build-release
 clean:  ## Remove compiled artifacts
 	$Q rm bin/*
 
-debug: generate vet build-debug  ## Debug build: create a dev build (enable race detection, don't strip symbols)
+debug: generate test build-debug  ## Debug build: create a dev build (enable race detection, don't strip symbols)
 
 release: generate test build-release-bundles  ## Release build: create a release build (disable race detection, strip symbols)
 
