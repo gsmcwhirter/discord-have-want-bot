@@ -107,12 +107,11 @@ type gotCommands struct {
 }
 
 func (c *gotCommands) helpCharsPoints(user, guild, args string) (cmdhandler.Response, error) {
-	r := &cmdhandler.SimpleEmbedResponse{
+	r := &cmdhandler.EmbedResponse{
 		To: user,
 	}
 
 	r.Description = fmt.Sprintf("Usage: %s [%s] [skill name] [count?]\n\n", c.preCommand+" pts", "charname")
-	r.Description += fmt.Sprintf("Available %ss:\n", "charname")
 
 	t, err := c.deps.UserAPI().NewTransaction(false)
 	if err != nil {
@@ -133,18 +132,22 @@ func (c *gotCommands) helpCharsPoints(user, guild, args string) (cmdhandler.Resp
 	}
 
 	sort.Strings(charNames)
-	r.Description += fmt.Sprintf("  %s", strings.Join(charNames, "\n  "))
+	r.Fields = []cmdhandler.EmbedField{
+		{
+			Name: "*Available Character Names*",
+			Val:  fmt.Sprintf("```\n%s\n```\n", strings.Join(charNames, "\n")),
+		},
+	}
 
 	return r, nil
 }
 
 func (c *gotCommands) helpCharsItems(user, guild, args string) (cmdhandler.Response, error) {
-	r := &cmdhandler.SimpleEmbedResponse{
+	r := &cmdhandler.EmbedResponse{
 		To: user,
 	}
 
 	r.Description = fmt.Sprintf("Usage: %s [%s] [item name] [count?]\n\n", c.preCommand+" pts", "charname")
-	r.Description += fmt.Sprintf("Available %ss:\n", "charname")
 
 	t, err := c.deps.UserAPI().NewTransaction(false)
 	if err != nil {
@@ -165,7 +168,12 @@ func (c *gotCommands) helpCharsItems(user, guild, args string) (cmdhandler.Respo
 	}
 
 	sort.Strings(charNames)
-	r.Description += fmt.Sprintf("  %s", strings.Join(charNames, "\n  "))
+	r.Fields = []cmdhandler.EmbedField{
+		{
+			Name: "*Available Character Names*",
+			Val:  fmt.Sprintf("```\n%s\n```\n", strings.Join(charNames, "\n")),
+		},
+	}
 
 	return r, nil
 }

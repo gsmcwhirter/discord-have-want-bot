@@ -205,12 +205,17 @@ func (c *charCommands) list(user, guild, args string) (cmdhandler.Response, erro
 }
 
 func (c *charCommands) help(user, guild, args string) (cmdhandler.Response, error) {
-	r := &cmdhandler.SimpleEmbedResponse{
+	r := &cmdhandler.EmbedResponse{
 		To: user,
 	}
 
 	r.Description = fmt.Sprintf("Usage: %s [%s]\n\n", c.preCommand, "action")
-	r.Description += "Available actions:\n  help\n  list\n  show [charname]\n  create [charname]\n  delete [charname]\n"
+	r.Fields = []cmdhandler.EmbedField{
+		{
+			Name: "*Available Actions*",
+			Val:  "```help\nlist\nshow [charname]\ncreate [charname]\ndelete [charname]\n```\n",
+		},
+	}
 
 	return r, nil
 }
