@@ -46,15 +46,15 @@ func (c *charCommands) show(user, guild, args string) (cmdhandler.Response, erro
 		return r, err
 	}
 
-	r.Title = char.GetName()
+	r.Title = fmt.Sprintf("__%s__", char.GetName())
 	r.Fields = []cmdhandler.EmbedField{
 		{
-			Name: "Needed Items",
-			Val:  itemsDescription(char, "    "),
+			Name: "*Needed Items*",
+			Val:  fmt.Sprintf("```\n%s\n```\n", itemsDescription(char, "    ")),
 		},
 		{
-			Name: "Needed Skills",
-			Val:  skillsDescription(char, "    "),
+			Name: "*Needed Skills*",
+			Val:  fmt.Sprintf("```\n%s\n```\n", skillsDescription(char, "    ")),
 		},
 	}
 
@@ -192,9 +192,10 @@ func (c *charCommands) list(user, guild, args string) (cmdhandler.Response, erro
 	sort.Strings(charNames)
 
 	r.Title = "Character List"
+	r.Description = "Remember, you can `char create [charname]` and `char delete [charname]` to edit this list."
 	r.Fields = []cmdhandler.EmbedField{
 		{
-			Name: "Your Characters",
+			Name: "*Your Characters*",
 			Val:  "  " + strings.Join(charNames, "\n  "),
 		},
 	}

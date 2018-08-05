@@ -41,11 +41,11 @@ func (c *listCommands) items(user, guild, args string) (cmdhandler.Response, err
 			return r, err
 		}
 
-		r.Title = char.GetName()
+		r.Title = fmt.Sprintf("__%s__", char.GetName())
 		r.Fields = []cmdhandler.EmbedField{
 			{
-				Name: "Needed Items",
-				Val:  itemsDescription(char, "  "),
+				Name: "*Needed Items*",
+				Val:  fmt.Sprintf("```\n%s\n```\n", itemsDescription(char, "  ")),
 			},
 		}
 
@@ -71,11 +71,11 @@ func (c *listCommands) items(user, guild, args string) (cmdhandler.Response, err
 		itemDescrip += fmt.Sprintf("  %s x%d\n", itemName, ct)
 	}
 
-	r.Title = "All Characters"
+	r.Title = "__All Characters__"
 	r.Fields = []cmdhandler.EmbedField{
 		{
-			Name: "Needed Items",
-			Val:  itemDescrip,
+			Name: "*Needed Items*",
+			Val:  fmt.Sprintf("```\n%s\n```\n", itemDescrip),
 		},
 	}
 
@@ -106,11 +106,11 @@ func (c *listCommands) points(user, guild, args string) (cmdhandler.Response, er
 			return r, err
 		}
 
-		r.Title = char.GetName()
+		r.Title = fmt.Sprintf("__%s__", char.GetName())
 		r.Fields = []cmdhandler.EmbedField{
 			{
-				Name: "Needed Points",
-				Val:  skillsDescription(char, "  "),
+				Name: "*Needed Points*",
+				Val:  fmt.Sprintf("```\n%s\n```\n", skillsDescription(char, "  ")),
 			},
 		}
 
@@ -137,11 +137,11 @@ func (c *listCommands) points(user, guild, args string) (cmdhandler.Response, er
 		skillDescrip += fmt.Sprintf("  %s x%d\n", skillName, ct)
 	}
 
-	r.Title = "All Characters"
+	r.Title = "__All Characters__"
 	r.Fields = []cmdhandler.EmbedField{
 		{
-			Name: "Needed Points",
-			Val:  skillDescrip,
+			Name: "*Needed Points(",
+			Val:  fmt.Sprintf("```\n%s\n```\n", skillDescrip),
 		},
 	}
 

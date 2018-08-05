@@ -2,6 +2,7 @@ package msghandler
 
 import (
 	"errors"
+	"fmt"
 	"strings"
 
 	"github.com/go-kit/kit/log"
@@ -145,6 +146,9 @@ func (h *handlers) handleMessage(p *etfapi.Payload, req wsclient.WSMessage, resp
 	if err != nil {
 		_ = level.Error(logger).Log("message", "error handling command", "contents", content, "err", err)
 		resp.IncludeError(err)
+		resp.SetColor(0xff0000)
+	} else {
+		resp.SetColor(0x62aa00)
 	}
 
 	err = h.deps.MessageRateLimiter().Wait(req.Ctx)
@@ -152,6 +156,8 @@ func (h *handlers) handleMessage(p *etfapi.Payload, req wsclient.WSMessage, resp
 		_ = level.Error(logger).Log("message", "error waiting for ratelimiting", "err", err)
 		return
 	}
+
+	_ = level.Debug(logger).Log("message", "sending message", "marshaler", fmt.Sprintf("%+v", resp.ToMessage()), "resp", fmt.Sprintf("%+v", resp))
 
 	sendResp, body, err := h.bot.SendMessage(req.Ctx, m.ChannelID(), resp.ToMessage())
 	if err != nil {
