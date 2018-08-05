@@ -40,9 +40,7 @@ func CommandHandler(deps dependencies, versionStr string, opts Options) *cmdhand
 		versionStr: versionStr,
 	}
 
-	ch := cmdhandler.NewCommandHandler(p, cmdhandler.Options{
-		NoHelpOnUnknownCommands: true,
-	})
+	ch := cmdhandler.NewCommandHandler(p, cmdhandler.Options{})
 	ch.SetHandler("version", cmdhandler.NewLineHandler(rh.version))
 	ch.SetHandler("char", CharCommandHandler(deps, fmt.Sprintf("%schar", opts.CmdIndicator)))
 	ch.SetHandler("need", NeedCommandHandler(deps, fmt.Sprintf("%sneed", opts.CmdIndicator)))
