@@ -147,7 +147,7 @@ func (c *needCommands) helpCharsItems(user, guild, args string) (cmdhandler.Resp
 		To: user,
 	}
 
-	r.Description = fmt.Sprintf("Usage: %s [%s] [item name] [count?]\n\n", c.preCommand+" pts", "charname")
+	r.Description = fmt.Sprintf("Usage: %s [%s] [item name] [count?]\n\n", c.preCommand+" item", "charname")
 
 	t, err := c.deps.UserAPI().NewTransaction(false)
 	if err != nil {

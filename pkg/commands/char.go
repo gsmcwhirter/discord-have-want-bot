@@ -213,7 +213,7 @@ func (c *charCommands) help(user, guild, args string) (cmdhandler.Response, erro
 	r.Fields = []cmdhandler.EmbedField{
 		{
 			Name: "*Available Actions*",
-			Val:  "```help\nlist\nshow [charname]\ncreate [charname]\ndelete [charname]\n```\n",
+			Val:  "- help\n- list\n- show [charname]\n- create [charname]\n- delete [charname]\n",
 		},
 	}
 
