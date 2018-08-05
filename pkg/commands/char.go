@@ -76,7 +76,7 @@ func (c *charCommands) show(user, guild, args string) (cmdhandler.Response, erro
 }
 
 func (c *charCommands) create(user, guild, args string) (cmdhandler.Response, error) {
-	r := &cmdhandler.SimpleResponse{
+	r := &cmdhandler.SimpleEmbedResponse{
 		To: user,
 	}
 
@@ -120,12 +120,12 @@ func (c *charCommands) create(user, guild, args string) (cmdhandler.Response, er
 		return r, errors.Wrap(err, "could not save new character")
 	}
 
-	r.Content = "character created"
+	r.Description = "character created"
 	return r, nil
 }
 
 func (c *charCommands) delete(user, guild, args string) (cmdhandler.Response, error) {
-	r := &cmdhandler.SimpleResponse{
+	r := &cmdhandler.SimpleEmbedResponse{
 		To: user,
 	}
 
@@ -165,7 +165,7 @@ func (c *charCommands) delete(user, guild, args string) (cmdhandler.Response, er
 		return r, errors.Wrap(err, "could not delete character")
 	}
 
-	r.Content = "character deleted"
+	r.Description = "character deleted"
 	return r, nil
 }
 
@@ -205,12 +205,12 @@ func (c *charCommands) list(user, guild, args string) (cmdhandler.Response, erro
 }
 
 func (c *charCommands) help(user, guild, args string) (cmdhandler.Response, error) {
-	r := &cmdhandler.SimpleResponse{
+	r := &cmdhandler.SimpleEmbedResponse{
 		To: user,
 	}
 
-	r.Content = fmt.Sprintf("Usage: %s [%s]\n\n", c.preCommand, "action")
-	r.Content += "Available actions:\n  help\n  list\n  show [charname]\n  create [charname]\n  delete [charname]\n"
+	r.Description = fmt.Sprintf("Usage: %s [%s]\n\n", c.preCommand, "action")
+	r.Description += "Available actions:\n  help\n  list\n  show [charname]\n  create [charname]\n  delete [charname]\n"
 
 	return r, nil
 }

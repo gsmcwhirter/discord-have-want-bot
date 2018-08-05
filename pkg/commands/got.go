@@ -21,7 +21,7 @@ type gotItemHandler struct {
 }
 
 func (h *gotItemHandler) HandleLine(user, guild, args string) (cmdhandler.Response, error) {
-	r := &cmdhandler.SimpleResponse{
+	r := &cmdhandler.SimpleEmbedResponse{
 		To: user,
 	}
 
@@ -54,7 +54,7 @@ func (h *gotItemHandler) HandleLine(user, guild, args string) (cmdhandler.Respon
 
 	char.DecrNeededItem(itemName, uint64(ct))
 
-	r.Content = fmt.Sprintf("marked %s as needing -%d of %s", h.charName, ct, itemName)
+	r.Description = fmt.Sprintf("marked %s as needing -%d of %s", h.charName, ct, itemName)
 	return r, nil
 }
 
@@ -64,7 +64,7 @@ type gotPointsHandler struct {
 }
 
 func (h *gotPointsHandler) HandleLine(user, guild, args string) (cmdhandler.Response, error) {
-	r := &cmdhandler.SimpleResponse{
+	r := &cmdhandler.SimpleEmbedResponse{
 		To: user,
 	}
 
@@ -97,7 +97,7 @@ func (h *gotPointsHandler) HandleLine(user, guild, args string) (cmdhandler.Resp
 
 	char.DecrNeededSkill(skillName, uint64(ct))
 
-	r.Content = fmt.Sprintf("marked %s as needing -%d points in %s", h.charName, ct, skillName)
+	r.Description = fmt.Sprintf("marked %s as needing -%d points in %s", h.charName, ct, skillName)
 	return r, nil
 }
 
@@ -107,12 +107,12 @@ type gotCommands struct {
 }
 
 func (c *gotCommands) helpCharsPoints(user, guild, args string) (cmdhandler.Response, error) {
-	r := &cmdhandler.SimpleResponse{
+	r := &cmdhandler.SimpleEmbedResponse{
 		To: user,
 	}
 
-	r.Content = fmt.Sprintf("Usage: %s [%s] [skill name] [count?]\n\n", c.preCommand+" pts", "charname")
-	r.Content += fmt.Sprintf("Available %ss:\n", "charname")
+	r.Description = fmt.Sprintf("Usage: %s [%s] [skill name] [count?]\n\n", c.preCommand+" pts", "charname")
+	r.Description += fmt.Sprintf("Available %ss:\n", "charname")
 
 	t, err := c.deps.UserAPI().NewTransaction(false)
 	if err != nil {
@@ -133,18 +133,18 @@ func (c *gotCommands) helpCharsPoints(user, guild, args string) (cmdhandler.Resp
 	}
 
 	sort.Strings(charNames)
-	r.Content += fmt.Sprintf("  %s", strings.Join(charNames, "\n  "))
+	r.Description += fmt.Sprintf("  %s", strings.Join(charNames, "\n  "))
 
 	return r, nil
 }
 
 func (c *gotCommands) helpCharsItems(user, guild, args string) (cmdhandler.Response, error) {
-	r := &cmdhandler.SimpleResponse{
+	r := &cmdhandler.SimpleEmbedResponse{
 		To: user,
 	}
 
-	r.Content = fmt.Sprintf("Usage: %s [%s] [item name] [count?]\n\n", c.preCommand+" pts", "charname")
-	r.Content += fmt.Sprintf("Available %ss:\n", "charname")
+	r.Description = fmt.Sprintf("Usage: %s [%s] [item name] [count?]\n\n", c.preCommand+" pts", "charname")
+	r.Description += fmt.Sprintf("Available %ss:\n", "charname")
 
 	t, err := c.deps.UserAPI().NewTransaction(false)
 	if err != nil {
@@ -165,13 +165,13 @@ func (c *gotCommands) helpCharsItems(user, guild, args string) (cmdhandler.Respo
 	}
 
 	sort.Strings(charNames)
-	r.Content += fmt.Sprintf("  %s", strings.Join(charNames, "\n  "))
+	r.Description += fmt.Sprintf("  %s", strings.Join(charNames, "\n  "))
 
 	return r, nil
 }
 
 func (c *gotCommands) points(user, guild, args string) (cmdhandler.Response, error) {
-	r := &cmdhandler.SimpleResponse{
+	r := &cmdhandler.SimpleEmbedResponse{
 		To: user,
 	}
 
@@ -227,7 +227,7 @@ func (c *gotCommands) points(user, guild, args string) (cmdhandler.Response, err
 }
 
 func (c *gotCommands) item(user, guild, args string) (cmdhandler.Response, error) {
-	r := &cmdhandler.SimpleResponse{
+	r := &cmdhandler.SimpleEmbedResponse{
 		To: user,
 	}
 

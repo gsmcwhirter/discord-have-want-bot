@@ -18,7 +18,7 @@ type configCommands struct {
 }
 
 func (c *configCommands) list(user, guild, args string) (cmdhandler.Response, error) {
-	r := &cmdhandler.SimpleResponse{
+	r := &cmdhandler.SimpleEmbedResponse{
 		To: user,
 	}
 
@@ -34,12 +34,12 @@ func (c *configCommands) list(user, guild, args string) (cmdhandler.Response, er
 	}
 
 	s := bGuild.GetSettings()
-	r.Content = s.PrettyString()
+	r.Description = s.PrettyString()
 	return r, nil
 }
 
 func (c *configCommands) get(user, guild, args string) (cmdhandler.Response, error) {
-	r := &cmdhandler.SimpleResponse{
+	r := &cmdhandler.SimpleEmbedResponse{
 		To: user,
 	}
 
@@ -62,7 +62,7 @@ func (c *configCommands) get(user, guild, args string) (cmdhandler.Response, err
 		return r, fmt.Errorf("'%s' is not the name of a setting", settingName)
 	}
 
-	r.Content = fmt.Sprintf("```\n%s: '%s'\n```", settingName, sVal)
+	r.Description = fmt.Sprintf("```\n%s: '%s'\n```", settingName, sVal)
 	return r, nil
 }
 
@@ -71,7 +71,7 @@ type argPair struct {
 }
 
 func (c *configCommands) set(user, guild, args string) (cmdhandler.Response, error) {
-	r := &cmdhandler.SimpleResponse{
+	r := &cmdhandler.SimpleEmbedResponse{
 		To: user,
 	}
 
@@ -133,7 +133,7 @@ func (c *configCommands) set(user, guild, args string) (cmdhandler.Response, err
 }
 
 func (c *configCommands) reset(user, guild, args string) (cmdhandler.Response, error) {
-	r := &cmdhandler.SimpleResponse{
+	r := &cmdhandler.SimpleEmbedResponse{
 		To: user,
 	}
 
