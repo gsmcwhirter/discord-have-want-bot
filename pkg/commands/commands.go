@@ -23,9 +23,9 @@ type rootCommands struct {
 }
 
 func (c *rootCommands) version(user, guildw, args string) (cmdhandler.Response, error) {
-	r := &cmdhandler.SimpleResponse{
-		To:      user,
-		Content: c.versionStr,
+	r := &cmdhandler.SimpleEmbedResponse{
+		To:          user,
+		Description: c.versionStr,
 	}
 
 	return r, nil
