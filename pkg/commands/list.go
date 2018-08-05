@@ -69,7 +69,7 @@ func (c *listCommands) items(user, guild, args string) (cmdhandler.Response, err
 	itemDescrip := ""
 	for _, itemName := range itemNames {
 		ct := itemCounts[itemName]
-		itemDescrip += fmt.Sprintf("  %s x%d\n", itemName, ct)
+		itemDescrip += fmt.Sprintf("%s x%d\n", itemName, ct)
 	}
 
 	r.Title = "__All Characters__"
@@ -137,7 +137,7 @@ func (c *listCommands) points(user, guild, args string) (cmdhandler.Response, er
 	skillDescrip := ""
 	for _, skillName := range skillNames {
 		ct := skillCounts[skillName]
-		skillDescrip += fmt.Sprintf("  %s x%d\n", skillName, ct)
+		skillDescrip += fmt.Sprintf("%s x%d\n", skillName, ct)
 	}
 
 	r.Title = "__All Characters__"
