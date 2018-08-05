@@ -42,10 +42,11 @@ func (c *listCommands) items(user, guild, args string) (cmdhandler.Response, err
 		}
 
 		r.Title = fmt.Sprintf("__%s__", char.GetName())
+		r.Description = "Remember, you can call `need item [charname] [item]` and `got item [charname] [item]` to add and remove items to this list."
 		r.Fields = []cmdhandler.EmbedField{
 			{
 				Name: "*Needed Items*",
-				Val:  fmt.Sprintf("```\n%s\n```\n", itemsDescription(char, "  ")),
+				Val:  fmt.Sprintf("```\n%s\n```\n", itemsDescription(char, "")),
 			},
 		}
 
@@ -72,6 +73,7 @@ func (c *listCommands) items(user, guild, args string) (cmdhandler.Response, err
 	}
 
 	r.Title = "__All Characters__"
+	r.Description = "Remember, you can call `need item [charname] [item]` and `got item [charname] [item]` to add and remove items to this list."
 	r.Fields = []cmdhandler.EmbedField{
 		{
 			Name: "*Needed Items*",
@@ -107,6 +109,7 @@ func (c *listCommands) points(user, guild, args string) (cmdhandler.Response, er
 		}
 
 		r.Title = fmt.Sprintf("__%s__", char.GetName())
+		r.Description = "Remember, you can call `need pts [charname] [item]` and `got pts [charname] [item]` to add and remove items to this list."
 		r.Fields = []cmdhandler.EmbedField{
 			{
 				Name: "*Needed Points*",
@@ -138,6 +141,7 @@ func (c *listCommands) points(user, guild, args string) (cmdhandler.Response, er
 	}
 
 	r.Title = "__All Characters__"
+	r.Description = "Remember, you can call `need pts [charname] [item]` and `got pts [charname] [item]` to add and remove items to this list."
 	r.Fields = []cmdhandler.EmbedField{
 		{
 			Name: "*Needed Points(",

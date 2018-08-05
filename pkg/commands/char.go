@@ -47,14 +47,15 @@ func (c *charCommands) show(user, guild, args string) (cmdhandler.Response, erro
 	}
 
 	r.Title = fmt.Sprintf("__%s__", char.GetName())
+	r.Description = "Remember, you can call `need item [charname] [item]` and `need pts [charname] [item]` to add items to these lists. You can also call `got item [charname] [item]` and `got pts [charname] [item]` to remove items from this list."
 	r.Fields = []cmdhandler.EmbedField{
 		{
 			Name: "*Needed Items*",
-			Val:  fmt.Sprintf("```\n%s\n```\n", itemsDescription(char, "    ")),
+			Val:  fmt.Sprintf("```\n%s\n```\n", itemsDescription(char, "")),
 		},
 		{
 			Name: "*Needed Skills*",
-			Val:  fmt.Sprintf("```\n%s\n```\n", skillsDescription(char, "    ")),
+			Val:  fmt.Sprintf("```\n%s\n```\n", skillsDescription(char, "")),
 		},
 	}
 
@@ -191,12 +192,12 @@ func (c *charCommands) list(user, guild, args string) (cmdhandler.Response, erro
 	}
 	sort.Strings(charNames)
 
-	r.Title = "Character List"
-	r.Description = "Remember, you can `char create [charname]` and `char delete [charname]` to edit this list."
+	r.Title = "__Character List__"
+	r.Description = "Remember, you can call `char create [charname]` and `char delete [charname]` to edit this list."
 	r.Fields = []cmdhandler.EmbedField{
 		{
 			Name: "*Your Characters*",
-			Val:  "  " + strings.Join(charNames, "\n  "),
+			Val:  fmt.Sprintf("```\n%s\n```\n", strings.Join(charNames, "\n")),
 		},
 	}
 
