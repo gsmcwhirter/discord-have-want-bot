@@ -41,10 +41,10 @@ func (d *dependencies) Close() {
 	}
 }
 
-func (d dependencies) Logger() log.Logger {
+func (d *dependencies) Logger() log.Logger {
 	return d.logger
 }
 
-func (d dependencies) UserAPI() storage.UserAPI {
+func (d *dependencies) UserAPI() storage.UserAPI {
 	return d.userAPI
 }
