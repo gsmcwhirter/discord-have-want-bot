@@ -1,10 +1,13 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"os"
 
 	"github.com/gsmcwhirter/discord-bot-lib/cmdhandler"
+	"github.com/gsmcwhirter/discord-bot-lib/snowflake"
+	"github.com/pkg/errors"
 
 	"github.com/steven-ferrer/gonsole"
 
@@ -12,9 +15,10 @@ import (
 )
 
 type config struct {
-	Database  string `mapstructure:"database"`
-	User      string `mapstructure:"user"`
-	TestThing string `mapstructure:"test_thing"`
+	Database string `mapstructure:"database"`
+	User     string `mapstructure:"user"`
+	Guild    string `mapstructure:"guild"`
+	Channel  string `mapstructure:"channel"`
 }
 
 func start(c config) error {
@@ -26,7 +30,27 @@ func start(c config) error {
 	}
 	defer deps.Close()
 
-	ch := commands.CommandHandler(deps, fmt.Sprintf("%s (%s) (%s)", BuildVersion, BuildSHA, BuildDate), commands.Options{CmdIndicator: "!"})
+	ch, err := commands.CommandHandler(deps, fmt.Sprintf("%s (%s) (%s)", BuildVersion, BuildSHA, BuildDate), commands.Options{CmdIndicator: "!"})
+	if err != nil {
+		return err
+	}
+
+	uid, err := snowflake.FromString(c.User)
+	if err != nil {
+		return errors.Wrap(err, "could not parse user id")
+	}
+
+	gid, err := snowflake.FromString(c.Guild)
+	if err != nil {
+		return errors.Wrap(err, "could not parse guild id")
+	}
+
+	cid, err := snowflake.FromString(c.Channel)
+	if err != nil {
+		return errors.Wrap(err, "could not parse channel id")
+	}
+
+	baseMsg := cmdhandler.NewSimpleMessage(context.Background(), uid, gid, cid, 0, "")
 
 	scanner := gonsole.NewReader(os.Stdin)
 	var line string
@@ -42,7 +66,7 @@ func start(c config) error {
 			break
 		}
 
-		resp, err = ch.HandleLine(c.User, "", line)
+		resp, err = ch.HandleLine(cmdhandler.NewWithContents(baseMsg, line))
 		if err != nil {
 			resp.IncludeError(err)
 		}

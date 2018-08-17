@@ -16,9 +16,10 @@ func setup(start func(config) error) *cli.Command {
 	var configFile string
 
 	c.Flags().StringVar(&configFile, "config", "./config.toml", "The config file to use")
-	c.Flags().String("user", "", "The discord user string to impersonate")
+	c.Flags().String("user", "0", "The discord user string to impersonate")
+	c.Flags().String("guild", "0", "The discord guild id to impersonate")
+	c.Flags().String("channel", "0", "The discord channel id to impersonate")
 	c.Flags().String("database", "", "The database file")
-	c.Flags().String("test_thing", "", "Testing")
 
 	c.SetRunFunc(func(cmd *cli.Command, args []string) (err error) {
 		v := viper.New()

@@ -17,12 +17,12 @@ type listCommands struct {
 	deps       dependencies
 }
 
-func (c *listCommands) items(user, guild, args string) (cmdhandler.Response, error) {
+func (c *listCommands) items(msg cmdhandler.Message) (cmdhandler.Response, error) {
 	r := &cmdhandler.EmbedResponse{
-		To: user,
+		To: cmdhandler.UserMentionString(msg.UserID()),
 	}
 
-	charName := strings.TrimSpace(args)
+	charName := strings.TrimSpace(msg.Contents())
 
 	t, err := c.deps.UserAPI().NewTransaction(false)
 	if err != nil {
@@ -30,7 +30,7 @@ func (c *listCommands) items(user, guild, args string) (cmdhandler.Response, err
 	}
 	defer util.CheckDefer(t.Rollback)
 
-	bUser, err := t.AddUser(user) // add or get empty (don't save)
+	bUser, err := t.AddUser(msg.UserID().ToString()) // add or get empty (don't save)
 	if err != nil {
 		return r, errors.Wrap(err, "unable to find user")
 	}
@@ -84,12 +84,12 @@ func (c *listCommands) items(user, guild, args string) (cmdhandler.Response, err
 	return r, nil
 }
 
-func (c *listCommands) points(user, guild, args string) (cmdhandler.Response, error) {
+func (c *listCommands) points(msg cmdhandler.Message) (cmdhandler.Response, error) {
 	r := &cmdhandler.EmbedResponse{
-		To: user,
+		To: cmdhandler.UserMentionString(msg.UserID()),
 	}
 
-	charName := strings.TrimSpace(args)
+	charName := strings.TrimSpace(msg.Contents())
 
 	t, err := c.deps.UserAPI().NewTransaction(false)
 	if err != nil {
@@ -97,7 +97,7 @@ func (c *listCommands) points(user, guild, args string) (cmdhandler.Response, er
 	}
 	defer util.CheckDefer(t.Rollback)
 
-	bUser, err := t.AddUser(user) // add or get empty (don't save)
+	bUser, err := t.AddUser(msg.UserID().ToString()) // add or get empty (don't save)
 	if err != nil {
 		return r, errors.Wrap(err, "unable to find user")
 	}
@@ -152,8 +152,8 @@ func (c *listCommands) points(user, guild, args string) (cmdhandler.Response, er
 	return r, nil
 }
 
-// ListCommandHandler TODOC
-func ListCommandHandler(deps dependencies, preCommand string) *cmdhandler.CommandHandler {
+// ListCommandHandler creates a command handler for !list commands
+func ListCommandHandler(deps dependencies, preCommand string) (*cmdhandler.CommandHandler, error) {
 	p := parser.NewParser(parser.Options{
 		CmdIndicator: " ",
 	})
@@ -161,13 +161,17 @@ func ListCommandHandler(deps dependencies, preCommand string) *cmdhandler.Comman
 		preCommand: preCommand,
 		deps:       deps,
 	}
-	ch := cmdhandler.NewCommandHandler(p, cmdhandler.Options{
+	ch, err := cmdhandler.NewCommandHandler(p, cmdhandler.Options{
 		PreCommand:          preCommand,
 		Placeholder:         "type",
 		HelpOnEmptyCommands: true,
 	})
-	ch.SetHandler("items", cmdhandler.NewLineHandler(cc.items))
-	ch.SetHandler("points", cmdhandler.NewLineHandler(cc.points))
+	if err != nil {
+		return nil, err
+	}
 
-	return ch
+	ch.SetHandler("items", cmdhandler.NewMessageHandler(cc.items))
+	ch.SetHandler("points", cmdhandler.NewMessageHandler(cc.points))
+
+	return ch, nil
 }

@@ -19,12 +19,12 @@ type charCommands struct {
 	deps       dependencies
 }
 
-func (c *charCommands) show(user, guild, args string) (cmdhandler.Response, error) {
+func (c *charCommands) show(msg cmdhandler.Message) (cmdhandler.Response, error) {
 	r := &cmdhandler.EmbedResponse{
-		To: user,
+		To: cmdhandler.UserMentionString(msg.UserID()),
 	}
 
-	charName := strings.TrimSpace(args)
+	charName := strings.TrimSpace(msg.Contents())
 
 	if len(charName) == 0 {
 		return r, ErrCharacterNameRequired
@@ -36,7 +36,7 @@ func (c *charCommands) show(user, guild, args string) (cmdhandler.Response, erro
 	}
 	defer util.CheckDefer(t.Rollback)
 
-	bUser, err := t.AddUser(user) // add or get empty (don't save)
+	bUser, err := t.AddUser(msg.UserID().ToString()) // add or get empty (don't save)
 	if err != nil {
 		return r, errors.Wrap(err, "unable to find user")
 	}
@@ -59,28 +59,15 @@ func (c *charCommands) show(user, guild, args string) (cmdhandler.Response, erro
 		},
 	}
 
-	// 	charDescription := fmt.Sprintf(`__**%[2]s**__
-
-	//   Needed Items:
-	// %[1]s
-	// 	%[3]s
-	// %[1]s
-
-	//   Needed Skills:
-	// %[1]s
-	// 	%[4]s
-	// %[1]s
-	// `, "```", char.GetName(), itemsDescription(char, "    "), skillsDescription(char, "    "))
-
 	return r, nil
 }
 
-func (c *charCommands) create(user, guild, args string) (cmdhandler.Response, error) {
+func (c *charCommands) create(msg cmdhandler.Message) (cmdhandler.Response, error) {
 	r := &cmdhandler.SimpleEmbedResponse{
-		To: user,
+		To: cmdhandler.UserMentionString(msg.UserID()),
 	}
 
-	charName := strings.TrimSpace(args)
+	charName := strings.TrimSpace(msg.Contents())
 
 	if len(charName) == 0 {
 		return r, ErrCharacterNameRequired
@@ -92,9 +79,9 @@ func (c *charCommands) create(user, guild, args string) (cmdhandler.Response, er
 	}
 	defer util.CheckDefer(t.Rollback)
 
-	bUser, err := t.GetUser(user)
+	bUser, err := t.GetUser(msg.UserID().ToString())
 	if err != nil {
-		bUser, err = t.AddUser(user)
+		bUser, err = t.AddUser(msg.UserID().ToString())
 		if err != nil {
 			return r, errors.Wrap(err, "could not create character")
 		}
@@ -124,12 +111,12 @@ func (c *charCommands) create(user, guild, args string) (cmdhandler.Response, er
 	return r, nil
 }
 
-func (c *charCommands) delete(user, guild, args string) (cmdhandler.Response, error) {
+func (c *charCommands) delete(msg cmdhandler.Message) (cmdhandler.Response, error) {
 	r := &cmdhandler.SimpleEmbedResponse{
-		To: user,
+		To: cmdhandler.UserMentionString(msg.UserID()),
 	}
 
-	charName := strings.TrimSpace(args)
+	charName := strings.TrimSpace(msg.Contents())
 
 	if len(charName) == 0 {
 		return r, ErrCharacterNameRequired
@@ -141,9 +128,9 @@ func (c *charCommands) delete(user, guild, args string) (cmdhandler.Response, er
 	}
 	defer util.CheckDefer(t.Rollback)
 
-	bUser, err := t.GetUser(user)
+	bUser, err := t.GetUser(msg.UserID().ToString())
 	if err != nil {
-		bUser, err = t.AddUser(user)
+		bUser, err = t.AddUser(msg.UserID().ToString())
 		if err != nil {
 			return r, errors.Wrap(err, "could not create character")
 		}
@@ -169,9 +156,9 @@ func (c *charCommands) delete(user, guild, args string) (cmdhandler.Response, er
 	return r, nil
 }
 
-func (c *charCommands) list(user, guild, args string) (cmdhandler.Response, error) {
+func (c *charCommands) list(msg cmdhandler.Message) (cmdhandler.Response, error) {
 	r := &cmdhandler.EmbedResponse{
-		To: user,
+		To: cmdhandler.UserMentionString(msg.UserID()),
 	}
 
 	t, err := c.deps.UserAPI().NewTransaction(false)
@@ -180,7 +167,7 @@ func (c *charCommands) list(user, guild, args string) (cmdhandler.Response, erro
 	}
 	defer util.CheckDefer(t.Rollback)
 
-	bUser, err := t.AddUser(user) // add or get empty (don't save)
+	bUser, err := t.AddUser(msg.UserID().ToString()) // add or get empty (don't save)
 	if err != nil {
 		return r, errors.Wrap(err, "unable to find user")
 	}
@@ -204,9 +191,9 @@ func (c *charCommands) list(user, guild, args string) (cmdhandler.Response, erro
 	return r, nil
 }
 
-func (c *charCommands) help(user, guild, args string) (cmdhandler.Response, error) {
+func (c *charCommands) help(msg cmdhandler.Message) (cmdhandler.Response, error) {
 	r := &cmdhandler.EmbedResponse{
-		To: user,
+		To: cmdhandler.UserMentionString(msg.UserID()),
 	}
 
 	r.Description = fmt.Sprintf("Usage: %s [%s]\n\n", c.preCommand, "action")
@@ -220,8 +207,8 @@ func (c *charCommands) help(user, guild, args string) (cmdhandler.Response, erro
 	return r, nil
 }
 
-// CharCommandHandler TODOC
-func CharCommandHandler(deps dependencies, preCommand string) *cmdhandler.CommandHandler {
+// CharCommandHandler creates a command handler for !char commands
+func CharCommandHandler(deps dependencies, preCommand string) (*cmdhandler.CommandHandler, error) {
 	p := parser.NewParser(parser.Options{
 		CmdIndicator: " ",
 	})
@@ -229,16 +216,20 @@ func CharCommandHandler(deps dependencies, preCommand string) *cmdhandler.Comman
 		preCommand: preCommand,
 		deps:       deps,
 	}
-	ch := cmdhandler.NewCommandHandler(p, cmdhandler.Options{
+	ch, err := cmdhandler.NewCommandHandler(p, cmdhandler.Options{
 		PreCommand:  preCommand,
 		Placeholder: "action",
 	})
-	ch.SetHandler("", cmdhandler.NewLineHandler(cc.help))
-	ch.SetHandler("help", cmdhandler.NewLineHandler(cc.help))
-	ch.SetHandler("list", cmdhandler.NewLineHandler(cc.list))
-	ch.SetHandler("show", cmdhandler.NewLineHandler(cc.show))
-	ch.SetHandler("create", cmdhandler.NewLineHandler(cc.create))
-	ch.SetHandler("delete", cmdhandler.NewLineHandler(cc.delete))
+	if err != nil {
+		return nil, err
+	}
 
-	return ch
+	ch.SetHandler("", cmdhandler.NewMessageHandler(cc.help))
+	ch.SetHandler("help", cmdhandler.NewMessageHandler(cc.help))
+	ch.SetHandler("list", cmdhandler.NewMessageHandler(cc.list))
+	ch.SetHandler("show", cmdhandler.NewMessageHandler(cc.show))
+	ch.SetHandler("create", cmdhandler.NewMessageHandler(cc.create))
+	ch.SetHandler("delete", cmdhandler.NewMessageHandler(cc.delete))
+
+	return ch, nil
 }

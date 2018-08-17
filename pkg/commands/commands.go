@@ -17,58 +17,71 @@ type Options struct {
 	CmdIndicator string
 }
 
-// RootCommands holds the commands at the root level
-type rootCommands struct {
-	versionStr string
-}
-
-func (c *rootCommands) version(user, guildw, args string) (cmdhandler.Response, error) {
-	r := &cmdhandler.SimpleEmbedResponse{
-		To:          user,
-		Description: c.versionStr,
-	}
-
-	return r, nil
-}
-
-// CommandHandler TODOC
-func CommandHandler(deps dependencies, versionStr string, opts Options) *cmdhandler.CommandHandler {
+// CommandHandler creates a new command handler for !char, !need, !got, and !list
+func CommandHandler(deps dependencies, versionStr string, opts Options) (*cmdhandler.CommandHandler, error) {
 	p := parser.NewParser(parser.Options{
 		CmdIndicator: opts.CmdIndicator,
 	})
-	rh := rootCommands{
-		versionStr: versionStr,
+
+	ch, err := cmdhandler.NewCommandHandler(p, cmdhandler.Options{})
+	if err != nil {
+		return nil, err
 	}
 
-	ch := cmdhandler.NewCommandHandler(p, cmdhandler.Options{})
-	ch.SetHandler("version", cmdhandler.NewLineHandler(rh.version))
-	ch.SetHandler("char", CharCommandHandler(deps, fmt.Sprintf("%schar", opts.CmdIndicator)))
-	ch.SetHandler("need", NeedCommandHandler(deps, fmt.Sprintf("%sneed", opts.CmdIndicator)))
-	ch.SetHandler("got", GotCommandHandler(deps, fmt.Sprintf("%sgot", opts.CmdIndicator)))
-	ch.SetHandler("list", ListCommandHandler(deps, fmt.Sprintf("%slist", opts.CmdIndicator)))
+	cch, err := CharCommandHandler(deps, fmt.Sprintf("%schar", opts.CmdIndicator))
+	if err != nil {
+		return nil, err
+	}
+	ch.SetHandler("char", cch)
 
-	return ch
+	nch, err := NeedCommandHandler(deps, fmt.Sprintf("%sneed", opts.CmdIndicator))
+	if err != nil {
+		return nil, err
+	}
+	ch.SetHandler("need", nch)
+
+	gch, err := GotCommandHandler(deps, fmt.Sprintf("%sgot", opts.CmdIndicator))
+	if err != nil {
+		return nil, err
+	}
+	ch.SetHandler("got", gch)
+
+	lch, err := ListCommandHandler(deps, fmt.Sprintf("%slist", opts.CmdIndicator))
+	if err != nil {
+		return nil, err
+	}
+	ch.SetHandler("list", lch)
+
+	return ch, nil
 }
 
 type configDependencies interface {
 	GuildAPI() storage.GuildAPI
 }
 
-// ConfigHandler TODOC
-func ConfigHandler(deps configDependencies, versionStr string, opts Options) *cmdhandler.CommandHandler {
+// ConfigHandler creates a new command handler for !config-hw
+func ConfigHandler(deps configDependencies, versionStr string, opts Options) (*cmdhandler.CommandHandler, error) {
 	p := parser.NewParser(parser.Options{
 		CmdIndicator: opts.CmdIndicator,
 	})
 
-	ch := cmdhandler.NewCommandHandler(p, cmdhandler.Options{
+	ch, err := cmdhandler.NewCommandHandler(p, cmdhandler.Options{
 		NoHelpOnUnknownCommands: true,
 	})
-	ch.SetHandler("config-hw", ConfigCommandHandler(deps, fmt.Sprintf("%sconfig", opts.CmdIndicator)))
+	if err != nil {
+		return nil, err
+	}
+
+	cch, err := ConfigCommandHandler(deps, versionStr, fmt.Sprintf("%sconfig", opts.CmdIndicator))
+	if err != nil {
+		return nil, err
+	}
+	ch.SetHandler("config-hw", cch)
 	// disable help for config
-	ch.SetHandler("help", cmdhandler.NewLineHandler(func(user, guild, args string) (cmdhandler.Response, error) {
+	ch.SetHandler("help", cmdhandler.NewMessageHandler(func(msg cmdhandler.Message) (cmdhandler.Response, error) {
 		r := &cmdhandler.SimpleEmbedResponse{}
 		return r, parser.ErrUnknownCommand
 	}))
 
-	return ch
+	return ch, nil
 }

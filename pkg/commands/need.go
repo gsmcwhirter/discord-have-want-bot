@@ -20,12 +20,12 @@ type needItemHandler struct {
 	charName string
 }
 
-func (h *needItemHandler) HandleLine(user, guild, args string) (cmdhandler.Response, error) {
+func (h *needItemHandler) HandleLine(msg cmdhandler.Message) (cmdhandler.Response, error) {
 	r := &cmdhandler.SimpleEmbedResponse{
-		To: user,
+		To: cmdhandler.UserMentionString(msg.UserID()),
 	}
 
-	args, ctRunes := parser.MaybeCount(args)
+	args, ctStr := parser.MaybeCount(msg.Contents())
 
 	itemName := strings.TrimSpace(args)
 
@@ -33,7 +33,7 @@ func (h *needItemHandler) HandleLine(user, guild, args string) (cmdhandler.Respo
 		return r, ErrItemNameRequired
 	}
 
-	ctStr := strings.TrimSpace(ctRunes)
+	ctStr = strings.TrimSpace(ctStr)
 	if ctStr == "" {
 		ctStr = "1"
 	}
@@ -63,12 +63,12 @@ type needPointsHandler struct {
 	charName string
 }
 
-func (h *needPointsHandler) HandleLine(user, guild, args string) (cmdhandler.Response, error) {
+func (h *needPointsHandler) HandleLine(msg cmdhandler.Message) (cmdhandler.Response, error) {
 	r := &cmdhandler.SimpleEmbedResponse{
-		To: user,
+		To: cmdhandler.UserMentionString(msg.UserID()),
 	}
 
-	args, ctRunes := parser.MaybeCount(args)
+	args, ctStr := parser.MaybeCount(msg.Contents())
 
 	skillName := strings.TrimSpace(args)
 
@@ -76,7 +76,7 @@ func (h *needPointsHandler) HandleLine(user, guild, args string) (cmdhandler.Res
 		return r, ErrSkillNameRequired
 	}
 
-	ctStr := strings.TrimSpace(ctRunes)
+	ctStr = strings.TrimSpace(ctStr)
 	if ctStr == "" {
 		ctStr = "1"
 	}
@@ -106,9 +106,9 @@ type needCommands struct {
 	deps       dependencies
 }
 
-func (c *needCommands) helpCharsPoints(user, guild, args string) (cmdhandler.Response, error) {
+func (c *needCommands) helpCharsPoints(msg cmdhandler.Message) (cmdhandler.Response, error) {
 	r := &cmdhandler.EmbedResponse{
-		To: user,
+		To: cmdhandler.UserMentionString(msg.UserID()),
 	}
 
 	r.Description = fmt.Sprintf("Usage: %s [%s] [skill name] [count?]\n\n", c.preCommand+" pts", "charname")
@@ -119,7 +119,7 @@ func (c *needCommands) helpCharsPoints(user, guild, args string) (cmdhandler.Res
 	}
 	defer util.CheckDefer(t.Rollback)
 
-	bUser, err := t.GetUser(user)
+	bUser, err := t.GetUser(msg.UserID().ToString())
 	if err != nil {
 		return r, nil
 	}
@@ -142,9 +142,9 @@ func (c *needCommands) helpCharsPoints(user, guild, args string) (cmdhandler.Res
 	return r, nil
 }
 
-func (c *needCommands) helpCharsItems(user, guild, args string) (cmdhandler.Response, error) {
+func (c *needCommands) helpCharsItems(msg cmdhandler.Message) (cmdhandler.Response, error) {
 	r := &cmdhandler.EmbedResponse{
-		To: user,
+		To: cmdhandler.UserMentionString(msg.UserID()),
 	}
 
 	r.Description = fmt.Sprintf("Usage: %s [%s] [item name] [count?]\n\n", c.preCommand+" item", "charname")
@@ -155,7 +155,7 @@ func (c *needCommands) helpCharsItems(user, guild, args string) (cmdhandler.Resp
 	}
 	defer util.CheckDefer(t.Rollback)
 
-	bUser, err := t.GetUser(user)
+	bUser, err := t.GetUser(msg.UserID().ToString())
 	if err != nil {
 		return r, nil
 	}
@@ -178,9 +178,9 @@ func (c *needCommands) helpCharsItems(user, guild, args string) (cmdhandler.Resp
 	return r, nil
 }
 
-func (c *needCommands) points(user, guild, args string) (cmdhandler.Response, error) {
+func (c *needCommands) points(msg cmdhandler.Message) (cmdhandler.Response, error) {
 	r := &cmdhandler.SimpleEmbedResponse{
-		To: user,
+		To: cmdhandler.UserMentionString(msg.UserID()),
 	}
 
 	t, err := c.deps.UserAPI().NewTransaction(true)
@@ -189,9 +189,9 @@ func (c *needCommands) points(user, guild, args string) (cmdhandler.Response, er
 	}
 	defer util.CheckDefer(t.Rollback)
 
-	bUser, err := t.GetUser(user)
+	bUser, err := t.GetUser(msg.UserID().ToString())
 	if err != nil {
-		bUser, err = t.AddUser(user)
+		bUser, err = t.AddUser(msg.UserID().ToString())
 		if err != nil {
 			return r, errors.Wrap(err, "could not create user")
 		}
@@ -206,16 +206,20 @@ func (c *needCommands) points(user, guild, args string) (cmdhandler.Response, er
 	p := parser.NewParser(parser.Options{
 		CmdIndicator: " ",
 	})
-	ch := cmdhandler.NewCommandHandler(p, cmdhandler.Options{
+	ch, err := cmdhandler.NewCommandHandler(p, cmdhandler.Options{
 		PreCommand:  c.preCommand + " pts",
 		Placeholder: "charname",
 	})
-	ch.SetHandler("", cmdhandler.NewLineHandler(c.helpCharsPoints))
+	if err != nil {
+		return r, err
+	}
+
+	ch.SetHandler("", cmdhandler.NewMessageHandler(c.helpCharsPoints))
 	for _, char := range characters {
 		ch.SetHandler(char.GetName(), &needPointsHandler{charName: char.GetName(), user: bUser})
 	}
 
-	r2, err := ch.HandleLine(user, guild, args)
+	r2, err := ch.HandleLine(msg)
 
 	if err != nil {
 		return r2, err
@@ -234,9 +238,9 @@ func (c *needCommands) points(user, guild, args string) (cmdhandler.Response, er
 	return r2, nil
 }
 
-func (c *needCommands) item(user, guild, args string) (cmdhandler.Response, error) {
+func (c *needCommands) item(msg cmdhandler.Message) (cmdhandler.Response, error) {
 	r := &cmdhandler.SimpleEmbedResponse{
-		To: user,
+		To: cmdhandler.UserMentionString(msg.UserID()),
 	}
 
 	t, err := c.deps.UserAPI().NewTransaction(true)
@@ -245,9 +249,9 @@ func (c *needCommands) item(user, guild, args string) (cmdhandler.Response, erro
 	}
 	defer util.CheckDefer(t.Rollback)
 
-	bUser, err := t.GetUser(user)
+	bUser, err := t.GetUser(msg.UserID().ToString())
 	if err != nil {
-		bUser, err = t.AddUser(user)
+		bUser, err = t.AddUser(msg.UserID().ToString())
 		if err != nil {
 			return r, errors.Wrap(err, "could not create user")
 		}
@@ -262,15 +266,19 @@ func (c *needCommands) item(user, guild, args string) (cmdhandler.Response, erro
 	p := parser.NewParser(parser.Options{
 		CmdIndicator: " ",
 	})
-	ch := cmdhandler.NewCommandHandler(p, cmdhandler.Options{
+	ch, err := cmdhandler.NewCommandHandler(p, cmdhandler.Options{
 		PreCommand:  c.preCommand + " item",
 		Placeholder: "charname",
 	})
-	ch.SetHandler("", cmdhandler.NewLineHandler(c.helpCharsItems))
+	if err != nil {
+		return r, err
+	}
+
+	ch.SetHandler("", cmdhandler.NewMessageHandler(c.helpCharsItems))
 	for _, char := range characters {
 		ch.SetHandler(char.GetName(), &needItemHandler{charName: char.GetName(), user: bUser})
 	}
-	r2, err := ch.HandleLine(user, guild, args)
+	r2, err := ch.HandleLine(msg)
 
 	if err != nil {
 		return r2, err
@@ -289,8 +297,8 @@ func (c *needCommands) item(user, guild, args string) (cmdhandler.Response, erro
 	return r2, nil
 }
 
-// NeedCommandHandler TODOC
-func NeedCommandHandler(deps dependencies, preCommand string) *cmdhandler.CommandHandler {
+// NeedCommandHandler creates a new command handler for !need commands
+func NeedCommandHandler(deps dependencies, preCommand string) (*cmdhandler.CommandHandler, error) {
 	p := parser.NewParser(parser.Options{
 		CmdIndicator: " ",
 	})
@@ -298,13 +306,17 @@ func NeedCommandHandler(deps dependencies, preCommand string) *cmdhandler.Comman
 		preCommand: preCommand,
 		deps:       deps,
 	}
-	ch := cmdhandler.NewCommandHandler(p, cmdhandler.Options{
+	ch, err := cmdhandler.NewCommandHandler(p, cmdhandler.Options{
 		PreCommand:          preCommand,
 		Placeholder:         "type",
 		HelpOnEmptyCommands: true,
 	})
-	ch.SetHandler("pts", cmdhandler.NewLineHandler(nc.points))
-	ch.SetHandler("item", cmdhandler.NewLineHandler(nc.item))
+	if err != nil {
+		return nil, err
+	}
 
-	return ch
+	ch.SetHandler("pts", cmdhandler.NewMessageHandler(nc.points))
+	ch.SetHandler("item", cmdhandler.NewMessageHandler(nc.item))
+
+	return ch, nil
 }
