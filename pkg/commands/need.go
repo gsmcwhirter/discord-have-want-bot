@@ -20,7 +20,7 @@ type needItemHandler struct {
 	charName string
 }
 
-func (h *needItemHandler) HandleLine(msg cmdhandler.Message) (cmdhandler.Response, error) {
+func (h *needItemHandler) HandleMessage(msg cmdhandler.Message) (cmdhandler.Response, error) {
 	r := &cmdhandler.SimpleEmbedResponse{
 		To: cmdhandler.UserMentionString(msg.UserID()),
 	}
@@ -63,7 +63,7 @@ type needPointsHandler struct {
 	charName string
 }
 
-func (h *needPointsHandler) HandleLine(msg cmdhandler.Message) (cmdhandler.Response, error) {
+func (h *needPointsHandler) HandleMessage(msg cmdhandler.Message) (cmdhandler.Response, error) {
 	r := &cmdhandler.SimpleEmbedResponse{
 		To: cmdhandler.UserMentionString(msg.UserID()),
 	}
@@ -219,7 +219,7 @@ func (c *needCommands) points(msg cmdhandler.Message) (cmdhandler.Response, erro
 		ch.SetHandler(char.GetName(), &needPointsHandler{charName: char.GetName(), user: bUser})
 	}
 
-	r2, err := ch.HandleLine(msg)
+	r2, err := ch.HandleMessage(msg)
 
 	if err != nil {
 		return r2, err
@@ -278,7 +278,7 @@ func (c *needCommands) item(msg cmdhandler.Message) (cmdhandler.Response, error)
 	for _, char := range characters {
 		ch.SetHandler(char.GetName(), &needItemHandler{charName: char.GetName(), user: bUser})
 	}
-	r2, err := ch.HandleLine(msg)
+	r2, err := ch.HandleMessage(msg)
 
 	if err != nil {
 		return r2, err
