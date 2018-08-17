@@ -23,7 +23,8 @@ import (
 
 var errUnauthorized = errors.New("unauthorized")
 
-// ErrNoResponse TODOC
+// ErrNoResponse is the error that should be returned by a command handler
+// if the bot should not provide a response
 var ErrNoResponse = errors.New("no response")
 
 type dependencies interface {
@@ -35,7 +36,8 @@ type dependencies interface {
 	BotSession() *session.Session
 }
 
-// Handlers TODOC
+// Handlers is the dependency interface for a set of message handlers that connect themselves
+// to a discord bot
 type Handlers interface {
 	ConnectToBot(discordapi.DiscordBot)
 }
@@ -48,14 +50,14 @@ type handlers struct {
 	errorColor              int
 }
 
-// Options TODOC
+// Options is how to set response colors etc. when creating a Handlers
 type Options struct {
 	DefaultCommandIndicator string
 	SuccessColor            int
 	ErrorColor              int
 }
 
-// NewHandlers TODOC
+// NewHandlers creates a new Handlers object
 func NewHandlers(deps dependencies, opts Options) Handlers {
 	h := handlers{
 		deps: deps,
@@ -95,7 +97,7 @@ func (h *handlers) guildCommandIndicator(gid snowflake.Snowflake) string {
 	return s.ControlSequence
 }
 
-func (h *handlers) attemptConfigAndAdminHandlers(msg *cmdhandler.SimpleMessage, req wsclient.WSMessage, cmdIndicator string, content string, m etfapi.Message, gid snowflake.Snowflake) (resp cmdhandler.Response, err error) {
+func (h *handlers) attemptConfigAndAdminHandlers(msg cmdhandler.Message, req wsclient.WSMessage, cmdIndicator string, content string, m etfapi.Message, gid snowflake.Snowflake) (resp cmdhandler.Response, err error) {
 	// TODO: check auth
 	logger := msglogging.WithMessage(msg, h.deps.Logger())
 
@@ -195,6 +197,4 @@ func (h *handlers) handleMessage(p *etfapi.Payload, req wsclient.WSMessage, resp
 	}
 
 	_ = level.Info(logger).Log("message", "successfully sent message to channel", "channel_id", sendTo.ToString())
-
-	return
 }

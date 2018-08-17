@@ -12,7 +12,7 @@ type dependencies interface {
 	UserAPI() storage.UserAPI
 }
 
-// Options TODOC
+// Options enables setting the command indicator string for a CommandHandler
 type Options struct {
 	CmdIndicator string
 }

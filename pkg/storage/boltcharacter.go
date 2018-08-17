@@ -4,10 +4,10 @@ import (
 	"errors"
 )
 
-// ErrSkillNotExist TODOC
+// ErrSkillNotExist is the error returned if a skill does not exist
 var ErrSkillNotExist = errors.New("skill does not exist")
 
-// ErrItemNotExist TODOC
+// ErrItemNotExist is the error returned if an item does not exist
 var ErrItemNotExist = errors.New("item does not exist")
 
 type boltCharacter struct {

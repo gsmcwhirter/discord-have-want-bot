@@ -2,12 +2,12 @@ package storage
 
 //go:generate protoc --go_out=. --proto_path=. ./userapi.proto
 
-// UserAPI TODOC
+// UserAPI is the api for managing users transactions
 type UserAPI interface {
 	NewTransaction(writable bool) (UserAPITx, error)
 }
 
-// UserAPITx TODOC
+// UserAPITx is the api for managing users within a transaction
 type UserAPITx interface {
 	Commit() error
 	Rollback() error
@@ -19,7 +19,7 @@ type UserAPITx interface {
 	SaveUser(user User) error
 }
 
-// User TODOC
+// User is the api for managing a particular user
 type User interface {
 	GetName() string
 	GetCharacter(name string) (Character, error)
@@ -32,7 +32,7 @@ type User interface {
 	Serialize() ([]byte, error)
 }
 
-// Character TODOC
+// Character is the api for managing a user's particular character
 type Character interface {
 	GetName() string
 	GetNeededSkill(name string) (Skill, error)
@@ -47,13 +47,13 @@ type Character interface {
 	DecrNeededItem(name string, amt uint64)
 }
 
-// Skill TODOC
+// Skill is the api for managing a character's skill entry
 type Skill interface {
 	Name() string
 	Points() uint64
 }
 
-// Item TODOC
+// Item is theapi for managing a character's item entry
 type Item interface {
 	Name() string
 	Count() uint64

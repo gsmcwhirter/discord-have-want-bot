@@ -9,7 +9,7 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/gsmcwhirter/discord-bot-lib/cmdhandler"
-	"github.com/gsmcwhirter/discord-bot-lib/util"
+	"github.com/gsmcwhirter/go-util/deferutil"
 	"github.com/gsmcwhirter/go-util/parser"
 
 	"github.com/gsmcwhirter/discord-have-want-bot/pkg/storage"
@@ -117,7 +117,7 @@ func (c *gotCommands) helpCharsPoints(msg cmdhandler.Message) (cmdhandler.Respon
 	if err != nil {
 		return r, nil
 	}
-	defer util.CheckDefer(t.Rollback)
+	defer deferutil.CheckDefer(t.Rollback)
 
 	bUser, err := t.GetUser(msg.UserID().ToString())
 	if err != nil {
@@ -153,7 +153,7 @@ func (c *gotCommands) helpCharsItems(msg cmdhandler.Message) (cmdhandler.Respons
 	if err != nil {
 		return r, nil
 	}
-	defer util.CheckDefer(t.Rollback)
+	defer deferutil.CheckDefer(t.Rollback)
 
 	bUser, err := t.GetUser(msg.UserID().ToString())
 	if err != nil {
@@ -187,7 +187,7 @@ func (c *gotCommands) points(msg cmdhandler.Message) (cmdhandler.Response, error
 	if err != nil {
 		return r, err
 	}
-	defer util.CheckDefer(t.Rollback)
+	defer deferutil.CheckDefer(t.Rollback)
 
 	bUser, err := t.GetUser(msg.UserID().ToString())
 	if err != nil {
@@ -247,7 +247,7 @@ func (c *gotCommands) item(msg cmdhandler.Message) (cmdhandler.Response, error) 
 	if err != nil {
 		return r, err
 	}
-	defer util.CheckDefer(t.Rollback)
+	defer deferutil.CheckDefer(t.Rollback)
 
 	bUser, err := t.GetUser(msg.UserID().ToString())
 	if err != nil {

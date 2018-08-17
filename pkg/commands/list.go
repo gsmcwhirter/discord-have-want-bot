@@ -8,7 +8,7 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/gsmcwhirter/discord-bot-lib/cmdhandler"
-	"github.com/gsmcwhirter/discord-bot-lib/util"
+	"github.com/gsmcwhirter/go-util/deferutil"
 	"github.com/gsmcwhirter/go-util/parser"
 )
 
@@ -28,7 +28,7 @@ func (c *listCommands) items(msg cmdhandler.Message) (cmdhandler.Response, error
 	if err != nil {
 		return r, err
 	}
-	defer util.CheckDefer(t.Rollback)
+	defer deferutil.CheckDefer(t.Rollback)
 
 	bUser, err := t.AddUser(msg.UserID().ToString()) // add or get empty (don't save)
 	if err != nil {
@@ -95,7 +95,7 @@ func (c *listCommands) points(msg cmdhandler.Message) (cmdhandler.Response, erro
 	if err != nil {
 		return r, err
 	}
-	defer util.CheckDefer(t.Rollback)
+	defer deferutil.CheckDefer(t.Rollback)
 
 	bUser, err := t.AddUser(msg.UserID().ToString()) // add or get empty (don't save)
 	if err != nil {

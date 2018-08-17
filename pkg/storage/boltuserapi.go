@@ -6,7 +6,7 @@ import (
 	"github.com/pkg/errors"
 )
 
-// ErrUserNotExist TODOC
+// ErrUserNotExist is the error returned if a user does not exist
 var ErrUserNotExist = errors.New("user does not exist")
 
 type boltUserAPI struct {

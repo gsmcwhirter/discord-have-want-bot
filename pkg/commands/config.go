@@ -4,11 +4,11 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/gsmcwhirter/discord-bot-lib/util"
 	"github.com/pkg/errors"
 
 	"github.com/gsmcwhirter/discord-bot-lib/cmdhandler"
 	"github.com/gsmcwhirter/discord-have-want-bot/pkg/storage"
+	"github.com/gsmcwhirter/go-util/deferutil"
 	"github.com/gsmcwhirter/go-util/parser"
 )
 
@@ -36,7 +36,7 @@ func (c *configCommands) list(msg cmdhandler.Message) (cmdhandler.Response, erro
 	if err != nil {
 		return r, err
 	}
-	defer util.CheckDefer(t.Rollback)
+	defer deferutil.CheckDefer(t.Rollback)
 
 	bGuild, err := t.AddGuild(msg.GuildID().ToString())
 	if err != nil {
@@ -59,7 +59,7 @@ func (c *configCommands) get(msg cmdhandler.Message) (cmdhandler.Response, error
 	if err != nil {
 		return r, err
 	}
-	defer util.CheckDefer(t.Rollback)
+	defer deferutil.CheckDefer(t.Rollback)
 
 	bGuild, err := t.AddGuild(msg.GuildID().ToString())
 	if err != nil {
@@ -113,7 +113,7 @@ func (c *configCommands) set(msg cmdhandler.Message) (cmdhandler.Response, error
 	if err != nil {
 		return r, err
 	}
-	defer util.CheckDefer(t.Rollback)
+	defer deferutil.CheckDefer(t.Rollback)
 
 	bGuild, err := t.AddGuild(msg.GuildID().ToString())
 	if err != nil {
@@ -151,7 +151,7 @@ func (c *configCommands) reset(msg cmdhandler.Message) (cmdhandler.Response, err
 	if err != nil {
 		return r, err
 	}
-	defer util.CheckDefer(t.Rollback)
+	defer deferutil.CheckDefer(t.Rollback)
 
 	bGuild, err := t.AddGuild(msg.GuildID().ToString())
 	if err != nil {
