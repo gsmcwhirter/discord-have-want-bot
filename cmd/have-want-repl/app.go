@@ -66,7 +66,7 @@ func start(c config) error {
 			break
 		}
 
-		resp, err = ch.HandleLine(cmdhandler.NewWithContents(baseMsg, line))
+		resp, err = ch.HandleMessage(cmdhandler.NewWithContents(baseMsg, line))
 		if err != nil {
 			resp.IncludeError(err)
 		}
