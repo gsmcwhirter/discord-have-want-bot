@@ -10,7 +10,6 @@ import (
 	"github.com/gsmcwhirter/discord-bot-lib/cmdhandler"
 	"github.com/gsmcwhirter/discord-bot-lib/discordapi"
 	"github.com/gsmcwhirter/discord-bot-lib/discordapi/etfapi"
-	"github.com/gsmcwhirter/discord-bot-lib/discordapi/session"
 	"github.com/gsmcwhirter/discord-bot-lib/logging"
 	"github.com/gsmcwhirter/discord-bot-lib/snowflake"
 	"github.com/gsmcwhirter/discord-bot-lib/wsclient"
@@ -33,7 +32,7 @@ type dependencies interface {
 	CommandHandler() *cmdhandler.CommandHandler
 	ConfigHandler() *cmdhandler.CommandHandler
 	MessageRateLimiter() *rate.Limiter
-	BotSession() *session.Session
+	BotSession() *etfapi.Session
 }
 
 // Handlers is the dependency interface for a set of message handlers that connect themselves

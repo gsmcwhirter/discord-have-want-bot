@@ -11,8 +11,8 @@ import (
 	"github.com/go-kit/kit/log/level"
 	"github.com/gsmcwhirter/discord-bot-lib/cmdhandler"
 	"github.com/gsmcwhirter/discord-bot-lib/discordapi"
+	"github.com/gsmcwhirter/discord-bot-lib/discordapi/etfapi"
 	"github.com/gsmcwhirter/discord-bot-lib/discordapi/messagehandler"
-	"github.com/gsmcwhirter/discord-bot-lib/discordapi/session"
 	"github.com/gsmcwhirter/discord-bot-lib/httpclient"
 	"github.com/gsmcwhirter/discord-bot-lib/wsclient"
 	"golang.org/x/time/rate"
@@ -35,7 +35,7 @@ type dependencies struct {
 	messageRateLimiter *rate.Limiter
 	connectRateLimiter *rate.Limiter
 	msgHandlers        msghandler.Handlers
-	botSession         *session.Session
+	botSession         *etfapi.Session
 }
 
 func createDependencies(conf config) (d *dependencies, err error) {
@@ -88,7 +88,7 @@ func createDependencies(conf config) (d *dependencies, err error) {
 	d.wsClient = wsclient.NewWSClient(d, wsclient.Options{MaxConcurrentHandlers: conf.NumWorkers})
 
 	d.discordMsgHandler = messagehandler.NewDiscordMessageHandler(d)
-	d.botSession = session.NewSession()
+	d.botSession = etfapi.NewSession()
 
 	d.cmdHandler, err = commands.CommandHandler(d, conf.Version, commands.Options{CmdIndicator: " "})
 	if err != nil {
@@ -161,7 +161,7 @@ func (d *dependencies) ConnectRateLimiter() *rate.Limiter {
 	return d.connectRateLimiter
 }
 
-func (d *dependencies) BotSession() *session.Session {
+func (d *dependencies) BotSession() *etfapi.Session {
 	return d.botSession
 }
 
