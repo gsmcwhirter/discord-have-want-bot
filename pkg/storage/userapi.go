@@ -39,12 +39,16 @@ type Character interface {
 	GetNeededSkills() []Skill
 	GetNeededItem(name string) (Item, error)
 	GetNeededItems() []Item
+	GetNeededTransmute(name string) (Transmute, error)
+	GetNeededTransmutes() []Transmute
 
 	SetName(name string)
 	IncrNeededSkill(name string, amt uint64)
 	DecrNeededSkill(name string, amt uint64)
 	IncrNeededItem(name string, amt uint64)
 	DecrNeededItem(name string, amt uint64)
+	IncrNeededTransmute(name string, amt uint64)
+	DecrNeededTransmute(name string, amt uint64)
 }
 
 // Skill is the api for managing a character's skill entry
@@ -53,8 +57,14 @@ type Skill interface {
 	Points() uint64
 }
 
-// Item is theapi for managing a character's item entry
+// Item is the api for managing a character's item entry
 type Item interface {
+	Name() string
+	Count() uint64
+}
+
+// Transmute is the api for managing a character's transmute entry
+type Transmute interface {
 	Name() string
 	Count() uint64
 }

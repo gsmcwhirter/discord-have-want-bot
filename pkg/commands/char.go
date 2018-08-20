@@ -46,16 +46,24 @@ func (c *charCommands) show(msg cmdhandler.Message) (cmdhandler.Response, error)
 		return r, err
 	}
 
+	itemDescrip, itemCt := itemsDescription(char, "")
+	skillDescrip, skillCt := skillsDescription(char, "")
+	transDescrip, transCt := transDescription(char, "")
+
 	r.Title = fmt.Sprintf("__%s__", char.GetName())
 	r.Description = "Remember, you can call `need item [charname] [item]` and `need pts [charname] [item]` to add items to these lists. You can also call `got item [charname] [item]` and `got pts [charname] [item]` to remove items from this list."
 	r.Fields = []cmdhandler.EmbedField{
 		{
-			Name: "*Needed Items*",
-			Val:  fmt.Sprintf("```\n%s\n```\n", itemsDescription(char, "")),
+			Name: fmt.Sprintf("*Needed Items (%d)*", itemCt),
+			Val:  fmt.Sprintf("```\n%s\n```\n", itemDescrip),
 		},
 		{
-			Name: "*Needed Skills*",
-			Val:  fmt.Sprintf("```\n%s\n```\n", skillsDescription(char, "")),
+			Name: fmt.Sprintf("*Needed Transmutes (%d; %d stones)*", transCt, transCt*50),
+			Val:  fmt.Sprintf("```\n%s\n```\n", transDescrip),
+		},
+		{
+			Name: fmt.Sprintf("*Needed Skills (%d)*", skillCt),
+			Val:  fmt.Sprintf("```\n%s\n```\n", skillDescrip),
 		},
 	}
 

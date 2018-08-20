@@ -59,6 +59,7 @@ func (u *boltUser) AddCharacter(name string) Character {
 		u.protoUser.Characters[name] = protoChar
 		char = &boltCharacter{protoChar}
 	}
+
 	return char
 }
 

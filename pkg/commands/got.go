@@ -58,12 +58,12 @@ func (h *gotItemHandler) HandleMessage(msg cmdhandler.Message) (cmdhandler.Respo
 	return r, nil
 }
 
-type gotPointsHandler struct {
+type gotPointHandler struct {
 	user     storage.User
 	charName string
 }
 
-func (h *gotPointsHandler) HandleMessage(msg cmdhandler.Message) (cmdhandler.Response, error) {
+func (h *gotPointHandler) HandleMessage(msg cmdhandler.Message) (cmdhandler.Response, error) {
 	r := &cmdhandler.SimpleEmbedResponse{
 		To: cmdhandler.UserMentionString(msg.UserID()),
 	}
@@ -101,84 +101,93 @@ func (h *gotPointsHandler) HandleMessage(msg cmdhandler.Message) (cmdhandler.Res
 	return r, nil
 }
 
+type gotTransmuteHandler struct {
+	user     storage.User
+	charName string
+}
+
+func (h *gotTransmuteHandler) HandleMessage(msg cmdhandler.Message) (cmdhandler.Response, error) {
+	r := &cmdhandler.SimpleEmbedResponse{
+		To: cmdhandler.UserMentionString(msg.UserID()),
+	}
+
+	args, ctStr := parser.MaybeCount(msg.Contents())
+
+	itemName := strings.TrimSpace(args)
+
+	if len(itemName) == 0 {
+		return r, ErrItemNameRequired
+	}
+
+	ctStr = strings.TrimSpace(ctStr)
+	if ctStr == "" {
+		ctStr = "1"
+	}
+
+	ct, err := strconv.Atoi(ctStr)
+	if err != nil {
+		return r, errors.Wrap(err, "could not interpret count to adjust transmute needs")
+	}
+
+	if ct < 0 {
+		return r, ErrPositiveValueRequired
+	}
+
+	char, err := h.user.GetCharacter(h.charName)
+	if err != nil {
+		return r, errors.Wrap(err, "could not find character to adjust transmute needs")
+	}
+
+	char.DecrNeededTransmute(itemName, uint64(ct))
+
+	r.Description = fmt.Sprintf("marked %s as needing -%d transmutes for %s", h.charName, ct, itemName)
+	return r, nil
+}
+
 type gotCommands struct {
 	preCommand string
 	deps       dependencies
 }
 
-func (c *gotCommands) helpCharsPoints(msg cmdhandler.Message) (cmdhandler.Response, error) {
-	r := &cmdhandler.EmbedResponse{
-		To: cmdhandler.UserMentionString(msg.UserID()),
-	}
+func (c *gotCommands) helpChars(use, cmd string) func(msg cmdhandler.Message) (cmdhandler.Response, error) {
+	return func(msg cmdhandler.Message) (cmdhandler.Response, error) {
+		r := &cmdhandler.EmbedResponse{
+			To: cmdhandler.UserMentionString(msg.UserID()),
+		}
 
-	r.Description = fmt.Sprintf("Usage: %s [%s] [skill name] [count?]\n\n", c.preCommand+" pts", "charname")
+		r.Description = fmt.Sprintf("Usage: %s %s [%s] [%s] [count?]\n\n", c.preCommand, cmd, "charname", use)
 
-	t, err := c.deps.UserAPI().NewTransaction(false)
-	if err != nil {
+		t, err := c.deps.UserAPI().NewTransaction(false)
+		if err != nil {
+			return r, nil
+		}
+		defer deferutil.CheckDefer(t.Rollback)
+
+		bUser, err := t.GetUser(msg.UserID().ToString())
+		if err != nil {
+			return r, nil
+		}
+
+		characters := bUser.GetCharacters()
+		charNames := make([]string, 0, len(characters))
+
+		for _, char := range characters {
+			charNames = append(charNames, char.GetName())
+		}
+
+		sort.Strings(charNames)
+		r.Fields = []cmdhandler.EmbedField{
+			{
+				Name: "*Available Character Names*",
+				Val:  fmt.Sprintf("```\n%s\n```\n", strings.Join(charNames, "\n")),
+			},
+		}
+
 		return r, nil
 	}
-	defer deferutil.CheckDefer(t.Rollback)
-
-	bUser, err := t.GetUser(msg.UserID().ToString())
-	if err != nil {
-		return r, nil
-	}
-
-	characters := bUser.GetCharacters()
-	charNames := make([]string, 0, len(characters))
-
-	for _, char := range characters {
-		charNames = append(charNames, char.GetName())
-	}
-
-	sort.Strings(charNames)
-	r.Fields = []cmdhandler.EmbedField{
-		{
-			Name: "*Available Character Names*",
-			Val:  fmt.Sprintf("```\n%s\n```\n", strings.Join(charNames, "\n")),
-		},
-	}
-
-	return r, nil
 }
 
-func (c *gotCommands) helpCharsItems(msg cmdhandler.Message) (cmdhandler.Response, error) {
-	r := &cmdhandler.EmbedResponse{
-		To: cmdhandler.UserMentionString(msg.UserID()),
-	}
-
-	r.Description = fmt.Sprintf("Usage: %s [%s] [item name] [count?]\n\n", c.preCommand+" item", "charname")
-
-	t, err := c.deps.UserAPI().NewTransaction(false)
-	if err != nil {
-		return r, nil
-	}
-	defer deferutil.CheckDefer(t.Rollback)
-
-	bUser, err := t.GetUser(msg.UserID().ToString())
-	if err != nil {
-		return r, nil
-	}
-
-	characters := bUser.GetCharacters()
-	charNames := make([]string, 0, len(characters))
-
-	for _, char := range characters {
-		charNames = append(charNames, char.GetName())
-	}
-
-	sort.Strings(charNames)
-	r.Fields = []cmdhandler.EmbedField{
-		{
-			Name: "*Available Character Names*",
-			Val:  fmt.Sprintf("```\n%s\n```\n", strings.Join(charNames, "\n")),
-		},
-	}
-
-	return r, nil
-}
-
-func (c *gotCommands) points(msg cmdhandler.Message) (cmdhandler.Response, error) {
+func (c *gotCommands) point(msg cmdhandler.Message) (cmdhandler.Response, error) {
 	r := &cmdhandler.SimpleEmbedResponse{
 		To: cmdhandler.UserMentionString(msg.UserID()),
 	}
@@ -214,9 +223,9 @@ func (c *gotCommands) points(msg cmdhandler.Message) (cmdhandler.Response, error
 		return r, err
 	}
 
-	ch.SetHandler("", cmdhandler.NewMessageHandler(c.helpCharsPoints))
+	ch.SetHandler("", cmdhandler.NewMessageHandler(c.helpChars("skill name", "pts")))
 	for _, char := range characters {
-		ch.SetHandler(char.GetName(), &gotPointsHandler{charName: char.GetName(), user: bUser})
+		ch.SetHandler(char.GetName(), &gotPointHandler{charName: char.GetName(), user: bUser})
 	}
 
 	r2, err := ch.HandleMessage(msg)
@@ -274,7 +283,7 @@ func (c *gotCommands) item(msg cmdhandler.Message) (cmdhandler.Response, error) 
 		return r, err
 	}
 
-	ch.SetHandler("", cmdhandler.NewMessageHandler(c.helpCharsItems))
+	ch.SetHandler("", cmdhandler.NewMessageHandler(c.helpChars("item name", "item")))
 	for _, char := range characters {
 		ch.SetHandler(char.GetName(), &gotItemHandler{charName: char.GetName(), user: bUser})
 	}
@@ -292,6 +301,65 @@ func (c *gotCommands) item(msg cmdhandler.Message) (cmdhandler.Response, error) 
 	err = t.Commit()
 	if err != nil {
 		return r2, errors.Wrap(err, "could not save item gotten")
+	}
+
+	return r2, nil
+}
+
+func (c *gotCommands) transmute(msg cmdhandler.Message) (cmdhandler.Response, error) {
+	r := &cmdhandler.SimpleEmbedResponse{
+		To: cmdhandler.UserMentionString(msg.UserID()),
+	}
+
+	t, err := c.deps.UserAPI().NewTransaction(true)
+	if err != nil {
+		return r, err
+	}
+	defer deferutil.CheckDefer(t.Rollback)
+
+	bUser, err := t.GetUser(msg.UserID().ToString())
+	if err != nil {
+		bUser, err = t.AddUser(msg.UserID().ToString())
+		if err != nil {
+			return r, errors.Wrap(err, "could not create user")
+		}
+	}
+
+	characters := bUser.GetCharacters()
+	charNames := make([]string, len(characters))
+	for i, char := range characters {
+		charNames[i] = char.GetName()
+	}
+
+	p := parser.NewParser(parser.Options{
+		CmdIndicator: " ",
+	})
+	ch, err := cmdhandler.NewCommandHandler(p, cmdhandler.Options{
+		PreCommand:  c.preCommand + " trans",
+		Placeholder: "charname",
+	})
+	if err != nil {
+		return r, err
+	}
+
+	ch.SetHandler("", cmdhandler.NewMessageHandler(c.helpChars("item name", "trans")))
+	for _, char := range characters {
+		ch.SetHandler(char.GetName(), &gotTransmuteHandler{charName: char.GetName(), user: bUser})
+	}
+	r2, err := ch.HandleMessage(msg)
+
+	if err != nil {
+		return r2, err
+	}
+
+	err = t.SaveUser(bUser)
+	if err != nil {
+		return r2, errors.Wrap(err, "could not save item transmuted")
+	}
+
+	err = t.Commit()
+	if err != nil {
+		return r2, errors.Wrap(err, "could not save item transmuted")
 	}
 
 	return r2, nil
@@ -315,8 +383,9 @@ func GotCommandHandler(deps dependencies, preCommand string) (*cmdhandler.Comman
 		return nil, err
 	}
 
-	ch.SetHandler("pts", cmdhandler.NewMessageHandler(gc.points))
+	ch.SetHandler("pts", cmdhandler.NewMessageHandler(gc.point))
 	ch.SetHandler("item", cmdhandler.NewMessageHandler(gc.item))
+	ch.SetHandler("trans", cmdhandler.NewMessageHandler(gc.transmute))
 
 	return ch, nil
 }

@@ -10,6 +10,9 @@ var ErrSkillNotExist = errors.New("skill does not exist")
 // ErrItemNotExist is the error returned if an item does not exist
 var ErrItemNotExist = errors.New("item does not exist")
 
+// ErrTransmuteNotExist is the error returned if a transmute does not exist
+var ErrTransmuteNotExist = errors.New("transmute does not exist")
+
 type boltCharacter struct {
 	protoCharacter *ProtoCharacter
 }
@@ -74,6 +77,34 @@ func (c *boltCharacter) GetNeededItems() []Item {
 	return items
 }
 
+func (c *boltCharacter) GetNeededTransmute(name string) (Transmute, error) {
+	if c.protoCharacter.NeededTransmutes == nil {
+		return nil, ErrTransmuteNotExist
+	}
+
+	protoTransm, ok := c.protoCharacter.NeededTransmutes[name]
+	if !ok {
+		return nil, ErrTransmuteNotExist
+	}
+
+	return boltTransmute{protoTransm}, nil
+}
+
+func (c *boltCharacter) GetNeededTransmutes() []Transmute {
+	if c.protoCharacter.NeededTransmutes == nil {
+		return []Transmute{}
+	}
+
+	items := make([]Transmute, len(c.protoCharacter.NeededTransmutes))
+	i := 0
+	for _, protoTransm := range c.protoCharacter.NeededTransmutes {
+		items[i] = boltTransmute{protoTransm}
+		i++
+	}
+
+	return items
+}
+
 func (c *boltCharacter) SetName(name string) {
 	c.protoCharacter.Name = name
 }
@@ -128,6 +159,33 @@ func (c *boltCharacter) DecrNeededItem(name string, amt uint64) {
 		s.Count -= amt
 		if s.Count <= 0 {
 			delete(c.protoCharacter.NeededItems, name)
+		}
+	}
+}
+
+func (c *boltCharacter) IncrNeededTransmute(name string, amt uint64) {
+	if c.protoCharacter.NeededTransmutes == nil {
+		c.protoCharacter.NeededTransmutes = map[string]*ProtoTransmute{}
+	}
+
+	s, ok := c.protoCharacter.NeededTransmutes[name]
+	if !ok {
+		c.protoCharacter.NeededTransmutes[name] = &ProtoTransmute{Name: name, Count: amt}
+	} else {
+		s.Count += amt
+	}
+}
+
+func (c *boltCharacter) DecrNeededTransmute(name string, amt uint64) {
+	if c.protoCharacter.NeededTransmutes == nil {
+		return
+	}
+
+	s, ok := c.protoCharacter.NeededTransmutes[name]
+	if ok {
+		s.Count -= amt
+		if s.Count <= 0 {
+			delete(c.protoCharacter.NeededTransmutes, name)
 		}
 	}
 }
