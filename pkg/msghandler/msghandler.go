@@ -182,8 +182,7 @@ func (h *handlers) handleMessage(p *etfapi.Payload, req wsclient.WSMessage, resp
 		return
 	}
 
-	_ = level.Info(logger).Log("message", "sending message")
-	_ = level.Debug(logger).Log("message", "sending message debug", "marshaler", fmt.Sprintf("%+v", resp.ToMessage()), "resp", fmt.Sprintf("%+v", resp))
+	_ = level.Info(logger).Log("message", "sending message", "resp", fmt.Sprintf("%+v", resp))
 
 	sendTo := resp.Channel()
 	if sendTo == 0 {
