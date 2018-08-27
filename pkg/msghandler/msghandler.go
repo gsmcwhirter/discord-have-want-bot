@@ -7,16 +7,15 @@ import (
 
 	"github.com/go-kit/kit/log"
 	"github.com/go-kit/kit/log/level"
+	"github.com/gsmcwhirter/discord-bot-lib/bot"
 	"github.com/gsmcwhirter/discord-bot-lib/cmdhandler"
-	"github.com/gsmcwhirter/discord-bot-lib/discordapi"
-	"github.com/gsmcwhirter/discord-bot-lib/discordapi/etfapi"
+	"github.com/gsmcwhirter/discord-bot-lib/etfapi"
 	"github.com/gsmcwhirter/discord-bot-lib/logging"
 	"github.com/gsmcwhirter/discord-bot-lib/snowflake"
 	"github.com/gsmcwhirter/discord-bot-lib/wsclient"
 	"github.com/gsmcwhirter/go-util/parser"
 	"golang.org/x/time/rate"
 
-	msglogging "github.com/gsmcwhirter/discord-have-want-bot/pkg/logging"
 	"github.com/gsmcwhirter/discord-have-want-bot/pkg/storage"
 )
 
@@ -38,11 +37,11 @@ type dependencies interface {
 // Handlers is the dependency interface for a set of message handlers that connect themselves
 // to a discord bot
 type Handlers interface {
-	ConnectToBot(discordapi.DiscordBot)
+	ConnectToBot(bot.DiscordBot)
 }
 
 type handlers struct {
-	bot                     discordapi.DiscordBot
+	bot                     bot.DiscordBot
 	deps                    dependencies
 	defaultCommandIndicator string
 	successColor            int
@@ -68,7 +67,7 @@ func NewHandlers(deps dependencies, opts Options) Handlers {
 	return &h
 }
 
-func (h *handlers) ConnectToBot(bot discordapi.DiscordBot) {
+func (h *handlers) ConnectToBot(bot bot.DiscordBot) {
 	h.bot = bot
 
 	bot.AddMessageHandler("MESSAGE_CREATE", h.handleMessage)
@@ -84,7 +83,7 @@ func (h *handlers) guildCommandIndicator(gid snowflake.Snowflake) string {
 		return h.defaultCommandIndicator
 	}
 
-	s, err := GetSettings(h.deps.GuildAPI(), gid)
+	s, err := storage.GetSettings(h.deps.GuildAPI(), gid)
 	if err != nil {
 		return h.defaultCommandIndicator
 	}
@@ -98,7 +97,7 @@ func (h *handlers) guildCommandIndicator(gid snowflake.Snowflake) string {
 
 func (h *handlers) attemptConfigAndAdminHandlers(msg cmdhandler.Message, req wsclient.WSMessage, cmdIndicator string, content string, m etfapi.Message, gid snowflake.Snowflake) (resp cmdhandler.Response, err error) {
 	// TODO: check auth
-	logger := msglogging.WithMessage(msg, h.deps.Logger())
+	logger := logging.WithMessage(msg, h.deps.Logger())
 
 	if !h.deps.BotSession().IsGuildAdmin(gid, m.AuthorID()) {
 		_ = level.Debug(logging.WithContext(req.Ctx, h.deps.Logger())).Log("message", "non-admin trying to config", "author_id", m.AuthorID().ToString(), "guild_id", gid.ToString())
@@ -152,7 +151,7 @@ func (h *handlers) handleMessage(p *etfapi.Payload, req wsclient.WSMessage, resp
 	}
 
 	msg := cmdhandler.NewSimpleMessage(req.Ctx, m.AuthorID(), gid, m.ChannelID(), m.ID(), "")
-	logger = msglogging.WithMessage(msg, h.deps.Logger())
+	logger = logging.WithMessage(msg, h.deps.Logger())
 	resp, err := h.attemptConfigAndAdminHandlers(msg, req, cmdIndicator, content, m, gid)
 
 	if err != nil && (err == errUnauthorized || err == parser.ErrUnknownCommand) {
